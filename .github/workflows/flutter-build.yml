@@ -1,0 +1,56 @@
+name: Flutter Build APK
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        flutter-version: [3.19.6]
+
+    steps:
+      # Checkout the repository
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      # Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter-version }}
+
+      # Install dependencies
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      # Clean previous builds
+      - name: Flutter Clean
+        run: flutter clean
+
+      # Run Flutter analyze to check for issues
+      - name: Flutter Analyze
+        run: flutter analyze
+
+      # Run Flutter tests (optional)
+      - name: Flutter Test
+        run: flutter test
+
+      # Build APK (release)
+      - name: Build APK
+        run: flutter build apk --release --no-shrink
+
+      # Upload APK as artifact
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
