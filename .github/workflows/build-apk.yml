@@ -1,0 +1,52 @@
+name: Build LinkUp APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:  # Manual trigger button
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ১. Repo checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ২. Java setup (Flutter Android needs Java 17)
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # ৩. Flutter setup
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.6'
+          channel: stable
+          cache: true
+
+      # ৪. google-services.json তৈরি করো (Secret থেকে)
+      - name: Create google-services.json
+        run: |
+          mkdir -p android/app
+          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+
+      # ৫. Dependencies install
+      - name: Install dependencies
+        run: flutter pub get
+
+      # ৬. Build release APK
+      - name: Build APK
+        run: flutter build apk --release --no-shrink
+
+      # ৭. APK download করার সুবিধার জন্য upload
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linkup-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
