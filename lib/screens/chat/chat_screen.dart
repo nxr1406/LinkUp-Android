@@ -90,7 +90,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     final doc = docs[index];
                     final message = MessageModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
                     final isMe = message.senderId == currentUser?.uid;
-                    return MessageBubble(message: message, isMe: isMe, currentUserId: currentUser?.uid ?? '');
+                    return MessageBubble(
+                      message: message,
+                      isMe: isMe,
+                      onReact: (emoji) {},
+                      onReply: () {},
+                    );
                   },
                 );
               },
