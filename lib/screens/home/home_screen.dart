@@ -1,0 +1,163 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:linkup_chat_app/providers/auth_provider.dart';
+import 'package:linkup_chat_app/providers/chat_provider.dart';
+import 'package:linkup_chat_app/screens/chat/chat_screen.dart';
+import 'package:linkup_chat_app/screens/profile/profile_screen.dart';
+import 'package:linkup_chat_app/widgets/chat/chat_tile.dart';
+import 'package:linkup_chat_app/services/chat_service.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+  final ChatService _chatService = ChatService();
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final chatProvider = Provider.of<ChatProvider>(context);
+    
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _buildChatList(authProvider, chatProvider),
+          const Center(child: Text('Groups - Coming Soon')),
+          const ProfileScreen(),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            activeIcon: Icon(Icons.chat_bubble),
+            label: 'Chats',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.group_outlined),
+            activeIcon: Icon(Icons.group),
+            label: 'Groups',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatList(AuthProvider authProvider, ChatProvider chatProvider) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: chatProvider.getChatsStream(authProvider.currentUser!.uid),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        final chats = snapshot.data!.docs;
+        
+        if (chats.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  'No chats yet',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Start a conversation with someone',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        return ListView.builder(
+          itemCount: chats.length,
+          itemBuilder: (context, index) {
+            final chatData = chats[index].data() as Map<String, dynamic>;
+            final chat = ChatModel.fromMap(chatData, chats[index].id);
+            
+            // Get other participant for one-to-one chat
+            String? otherUserId;
+            if (chat.type == ChatType.oneToOne) {
+              otherUserId = chat.participants.firstWhere(
+                (id) => id != authProvider.currentUser!.uid,
+                orElse: () => '',
+              );
+            }
+            
+            return FutureBuilder<DocumentSnapshot>(
+              future: otherUserId != null
+                  ? _chatService.getUserData(otherUserId)
+                  : null,
+              builder: (context, userSnapshot) {
+                String displayName = '';
+                String? photoURL;
+                
+                if (chat.type == ChatType.group) {
+                  displayName = chat.groupName ?? 'Group Chat';
+                  photoURL = chat.groupIcon;
+                } else if (userSnapshot.hasData && userSnapshot.data != null) {
+                  final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+                  displayName = userData['username'] ?? 'User';
+                  photoURL = userData['photoURL'];
+                }
+                
+                return ChatTile(
+                  chatId: chat.chatId,
+                  name: displayName,
+                  lastMessage: chat.lastMessage?.text ?? 'No messages',
+                  time: chat.updatedAt,
+                  avatarUrl: photoURL,
+                  unreadCount: 0, // Calculate unread count
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatScreen(
+                          chatId: chat.chatId,
+                          recipientName: displayName,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+extension on ChatService {
+  Future<DocumentSnapshot> getUserData(String userId) {
+    return FirebaseFirestore.instance.collection('users').doc(userId).get();
+  }
+}
