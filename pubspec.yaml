@@ -33,13 +33,13 @@ dependencies:
   dio: ^5.4.0
   
   # Utilities
-  intl: ^0.19.0
+  intl: ^0.18.1
   timeago: ^3.6.0
   flutter_dotenv: ^5.1.0
   shared_preferences: ^2.2.2
   emoji_picker_flutter: ^1.6.2
   
-  # Chat Features
+  # Chat Features (9.3.11 needs intl ^0.18.x)
   flutter_quill: ^9.3.11
   
   # WebRTC for calls
