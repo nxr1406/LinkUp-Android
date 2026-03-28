@@ -54,7 +54,7 @@ class MessageBubble extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          message.text,
+                          message.text ?? '',
                           style: TextStyle(
                             color: isMe ? Colors.white : null,
                           ),
@@ -155,7 +155,7 @@ class MessageBubble extends StatelessWidget {
         return const Icon(Icons.check, size: 12, color: Colors.grey);
       case MessageStatus.delivered:
         return const Icon(Icons.done_all, size: 12, color: Colors.grey);
-      case MessageStatus.read:
+      case MessageStatus.seen:
         return const Icon(Icons.done_all, size: 12, color: Colors.blue);
       default:
         return const SizedBox.shrink();
@@ -172,7 +172,7 @@ class MessageBubble extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          message.text,
+          message.text ?? '',
           style: TextStyle(
             fontStyle: FontStyle.italic,
             color: Colors.grey[600],
