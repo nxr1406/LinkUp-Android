@@ -3,7 +3,7 @@ name: Build Flutter APK
 on:
   push:
     branches: [ "main", "master" ]
-  workflow_dispatch: # Actions tab থেকে manually চালানো যাবে
+  workflow_dispatch:
 
 jobs:
   build:
@@ -43,21 +43,11 @@ jobs:
         run: flutter pub get
 
       - name: Build Debug APK
-        run: flutter build apk --debug
+        run: flutter build apk --debug --no-tree-shake-icons
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: linkup-debug.apk
           path: build/app/outputs/flutter-apk/app-debug.apk
-          retention-days: 7
-
-      - name: Build Release APK (unsigned)
-        run: flutter build apk --release
-
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: linkup-release.apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 7
+          retention-days: 30
