@@ -1,4 +1,4 @@
-package com.example.linkup
+package com.nxr.linkup
 
 import io.flutter.embedding.android.FlutterActivity
 

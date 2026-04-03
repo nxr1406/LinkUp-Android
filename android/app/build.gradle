@@ -6,8 +6,8 @@ plugins {
 }
 
 android {
-    namespace "com.example.linkup"
-    compileSdk flutter.compileSdkVersion
+    namespace "com.nxr.linkup"
+    compileSdk 35
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.linkup"
+        applicationId "com.nxr.linkup"
         minSdk 21
         targetSdk flutter.targetSdkVersion
         versionCode flutter.versionCode

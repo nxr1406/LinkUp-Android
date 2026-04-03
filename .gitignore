@@ -11,7 +11,7 @@ build/
 # Android
 android/local.properties
 android/key.properties
-android/app/google-services.json
+android/app/# google-services.json
 android/.gradle/
 android/app/build/
 android/captures/
@@ -37,8 +37,8 @@ ios/Runner/GeneratedPluginRegistrant.*
 ios/Pods/
 
 # Firebase — এগুলো কখনো GitHub-এ দিবেন না!
-lib/firebase_options.dart
-google-services.json
+
+# google-services.json
 GoogleService-Info.plist
 
 # IDE
