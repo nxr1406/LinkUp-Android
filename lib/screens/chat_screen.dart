@@ -387,7 +387,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 },
                 config: const Config(
                   height: 250,
-                  bgColor: Colors.white,
+                  emojiViewConfig: EmojiViewConfig(
+                    backgroundColor: Colors.white,
+                  ),
                 ),
               ),
             ),
