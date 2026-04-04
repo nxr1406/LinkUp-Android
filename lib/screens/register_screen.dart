@@ -61,6 +61,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'username': _usernameCtrl.text.trim(),
         'email': _emailCtrl.text.trim(),
         'avatarUrl': avatarUrl,
+        'photoURL': avatarUrl, // PWA compatibility
         'bio': '', 'isOnline': true,
         'lastSeen': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),

@@ -85,7 +85,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AvatarWidget(
-                url: _user!['avatarUrl'],
+                url: getAvatarUrl(_user),
                 name: _user!['fullName'] ?? '',
                 size: 80),
             const SizedBox(height: 12),
@@ -107,7 +107,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 child: Text(_user!['bio'],
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                        fontSize: 14, color: Color(0xFF262626))),
+                        fontSize: 14, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF262626))),
               ),
             const SizedBox(height: 24),
             ElevatedButton(

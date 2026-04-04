@@ -139,7 +139,7 @@ class _ChatScreenState extends State<ChatScreen> {
         title: GestureDetector(
           onTap: () { if (_otherUser?['id'] != null) context.go('/app/user/${_otherUser!['id']}'); },
           child: Row(children: [
-            AvatarWidget(url: _otherUser?['avatarUrl'], name: _otherUser?['fullName'] ?? '', size: 32),
+            AvatarWidget(url: getAvatarUrl(_otherUser), name: _otherUser?['fullName'] ?? '', size: 32),
             const SizedBox(width: 8),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
@@ -230,7 +230,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Padding(
             padding: const EdgeInsets.only(left: 16, bottom: 4),
             child: Row(children: [
-              AvatarWidget(url: _otherUser?['avatarUrl'], name: _otherUser?['fullName'] ?? '', size: 28),
+              AvatarWidget(url: getAvatarUrl(_otherUser), name: _otherUser?['fullName'] ?? '', size: 28),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -602,7 +602,7 @@ class _MessageBubble extends StatelessWidget {
           children: [
             if (!isMe) ...[
               AvatarWidget(
-                  url: otherUser?['avatarUrl'],
+                  url: getAvatarUrl(otherUser),
                   name: otherUser?['fullName'] ?? '',
                   size: 28),
               const SizedBox(width: 6),
@@ -849,7 +849,7 @@ class _ReadReceipt extends StatelessWidget {
           width: 14,
           height: 14,
           child: AvatarWidget(
-              url: otherUser!['avatarUrl'],
+              url: getAvatarUrl(otherUser),
               name: otherUser!['fullName'] ?? '',
               size: 14));
     }

@@ -1,5 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+/// PWA `photoURL`, Flutter `avatarUrl`, Firebase Auth photoURL —
+/// যেকোনো field-এ থাকলেই কাজ করবে
+String? getAvatarUrl(Map<String, dynamic>? userData, {bool isCurrentUser = false}) {
+  bool valid(String? s) =>
+      s != null && s.trim().isNotEmpty &&
+      (s.startsWith('http://') || s.startsWith('https://'));
+
+  if (userData != null) {
+    final a = userData['avatarUrl'] as String?;
+    final p = userData['photoURL'] as String?;
+    if (valid(a)) return a!.trim();
+    if (valid(p)) return p!.trim();
+  }
+  if (isCurrentUser) {
+    final authUrl = FirebaseAuth.instance.currentUser?.photoURL;
+    if (valid(authUrl)) return authUrl!.trim();
+  }
+  return null;
+}
 
 class AvatarWidget extends StatelessWidget {
   final String? url;
