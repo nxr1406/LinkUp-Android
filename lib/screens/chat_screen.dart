@@ -4,13 +4,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'package:timeago/timeago.dart' as timeago;
 import '../widgets/avatar_widget.dart';
 import '../widgets/verified_badge.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
   const ChatScreen({super.key, required this.chatId});
-
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
@@ -20,15 +20,13 @@ class _ChatScreenState extends State<ChatScreen> {
   final _scrollCtrl = ScrollController();
   final _focusNode = FocusNode();
   final _db = FirebaseFirestore.instance;
-  final _currentUser = FirebaseAuth.instance.currentUser;
+  final _me = FirebaseAuth.instance.currentUser;
 
   Map<String, dynamic>? _otherUser;
   Map<String, dynamic>? _chatData;
   bool _loading = true;
   bool _showEmojiPicker = false;
   Map<String, dynamic>? _replyingTo;
-  Map<String, dynamic>? _selectedMessage;
-  bool _showActionSheet = false;
 
   @override
   void initState() {
@@ -39,424 +37,389 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _loadChat() async {
     try {
-      final chatSnap =
-          await _db.collection('chats').doc(widget.chatId).get();
+      final chatSnap = await _db.collection('chats').doc(widget.chatId).get();
       if (!chatSnap.exists) return;
-
       final data = chatSnap.data()!;
-      final otherId = (data['participants'] as List)
-          .firstWhere((id) => id != _currentUser?.uid, orElse: () => null);
-
+      final otherId = (data['participants'] as List).firstWhere((id) => id != _me?.uid, orElse: () => null);
       if (otherId != null) {
         _db.collection('users').doc(otherId).snapshots().listen((snap) {
-          if (mounted && snap.exists) {
-            setState(() => _otherUser = {'id': snap.id, ...snap.data()!});
-          }
+          if (mounted && snap.exists) setState(() => _otherUser = {'id': snap.id, ...snap.data()!});
         });
       }
-
-      _db
-          .collection('chats')
-          .doc(widget.chatId)
-          .snapshots()
-          .listen((snap) {
-        if (mounted && snap.exists) {
-          setState(() => _chatData = snap.data());
-        }
+      _db.collection('chats').doc(widget.chatId).snapshots().listen((snap) {
+        if (mounted && snap.exists) setState(() => _chatData = snap.data());
       });
-
       setState(() => _loading = false);
-    } catch (e) {
-      setState(() => _loading = false);
-    }
+    } catch (_) { setState(() => _loading = false); }
   }
 
   Future<void> _markAsRead() async {
-    if (_currentUser == null) return;
+    if (_me == null) return;
     try {
-      await _db.collection('chats').doc(widget.chatId).update({
-        'unreadCount.${_currentUser!.uid}': 0,
-      });
+      await _db.collection('chats').doc(widget.chatId).update({'unreadCount.${_me!.uid}': 0});
     } catch (_) {}
   }
 
   Future<void> _sendMessage() async {
     final text = _inputCtrl.text.trim();
-    if (text.isEmpty || _currentUser == null) return;
-
+    if (text.isEmpty || _me == null) return;
     final reply = _replyingTo;
     _inputCtrl.clear();
-    setState(() => _replyingTo = null);
-
+    setState(() { _replyingTo = null; _showEmojiPicker = false; });
     try {
-      final msgData = {
-        'text': text,
-        'senderId': _currentUser!.uid,
+      await _db.collection('messages/${widget.chatId}/msgs').add({
+        'content': text,
+        'senderId': _me!.uid,
         'createdAt': FieldValue.serverTimestamp(),
-        'readBy': [_currentUser!.uid],
+        'readBy': [_me!.uid],
         if (reply != null) 'replyTo': reply,
-      };
-
-      await _db
-          .collection('messages/${widget.chatId}/msgs')
-          .add(msgData);
-
+      });
       await _db.collection('chats').doc(widget.chatId).update({
         'lastMessage': text,
         'lastMessageTime': FieldValue.serverTimestamp(),
-        'lastMessageSenderId': _currentUser!.uid,
-        'unreadCount.${_otherUser?['id']}':
-            FieldValue.increment(1),
+        'lastMessageSenderId': _me!.uid,
+        'unreadCount.${_otherUser?['id']}': FieldValue.increment(1),
       });
-
       _scrollToBottom();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to send message')),
-      );
-    }
-  }
-
-  Future<void> _deleteMessage(String msgId, {bool forEveryone = false}) async {
-    try {
-      if (forEveryone) {
-        await _db
-            .collection('messages/${widget.chatId}/msgs')
-            .doc(msgId)
-            .update({'deletedForEveryone': true, 'text': ''});
-      } else {
-        await _db
-            .collection('messages/${widget.chatId}/msgs')
-            .doc(msgId)
-            .update({
-          'deletedFor': FieldValue.arrayUnion([_currentUser!.uid])
-        });
-      }
     } catch (_) {}
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollCtrl.hasClients) {
-        _scrollCtrl.animateTo(
-          _scrollCtrl.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        _scrollCtrl.animateTo(_scrollCtrl.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
       }
     });
   }
 
-  String _formatMessageTime(Timestamp? ts) {
-    if (ts == null) return '';
-    final date = ts.toDate();
+  String _headerStatus() {
+    if (_otherUser == null) return '';
+    if (_otherUser!['isOnline'] == true) return 'Active now';
+    final lastSeen = _otherUser!['lastSeen'] as Timestamp?;
+    if (lastSeen == null) return '';
+    return 'Active ${timeago.format(lastSeen.toDate())}';
+  }
+
+  String _formatDateHeader(DateTime date) {
     final now = DateTime.now();
     final diff = now.difference(date).inDays;
-
-    if (diff == 0) return DateFormat('h:mm a').format(date);
-    if (diff == 1) return 'Yesterday ${DateFormat('h:mm a').format(date)}';
-    return DateFormat('MMM d, h:mm a').format(date);
+    if (diff == 0) return 'TODAY';
+    if (diff == 1) return 'YESTERDAY';
+    return DateFormat('EEE, MMM d').format(date).toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Scaffold(
-        body: Center(
-            child: CircularProgressIndicator(color: Color(0xFF0095F6))),
-      );
-    }
-
-    final isTyping = (_chatData?['typing'] as List?)
-            ?.contains(_otherUser?['id']) ==
-        true;
-    final isBlocked = false; // Implement block check from userData
+    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFF0095F6))));
+    final isTyping = (_chatData?['typing'] as List?)?.contains(_otherUser?['id']) == true;
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
         leadingWidth: 40,
         leading: IconButton(
           onPressed: () => context.go('/app'),
-          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          icon: const Icon(Icons.arrow_back_ios, size: 20, color: Color(0xFF262626)),
         ),
         title: GestureDetector(
-          onTap: () {
-            if (_otherUser?['id'] != null) {
-              context.go('/app/user/${_otherUser!['id']}');
-            }
-          },
-          child: Row(
-            children: [
-              AvatarWidget(
-                url: _otherUser?['avatarUrl'],
-                name: _otherUser?['fullName'] ?? '',
-                size: 32,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          (_chatData?['nicknames'] as Map?)?[
-                                  _otherUser?['id']] ??
-                              _otherUser?['username'] ??
-                              'Unknown',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF262626),
-                          ),
-                        ),
-                        if (_otherUser?['isVerified'] == true) ...[
-                          const SizedBox(width: 4),
-                          const VerifiedBadge(size: 14),
-                        ],
-                      ],
-                    ),
-                    if (isTyping)
-                      const Text('typing...',
-                          style: TextStyle(
-                              fontSize: 11, color: Color(0xFF8E8E8E))),
-                  ],
+          onTap: () { if (_otherUser?['id'] != null) context.go('/app/user/${_otherUser!['id']}'); },
+          child: Row(children: [
+            AvatarWidget(url: _otherUser?['avatarUrl'], name: _otherUser?['fullName'] ?? '', size: 32),
+            const SizedBox(width: 8),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Text(
+                  (_chatData?['nicknames'] as Map?)?[_otherUser?['id']] ?? _otherUser?['username'] ?? 'Unknown',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF262626)),
                 ),
+                if (_otherUser?['isVerified'] == true) ...[const SizedBox(width: 3), const VerifiedBadge(size: 13)],
+              ]),
+              Text(
+                isTyping ? 'typing...' : _headerStatus(),
+                style: const TextStyle(fontSize: 11, color: Color(0xFF8E8E8E), fontWeight: FontWeight.w400),
               ),
-            ],
+            ])),
+          ]),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () => _showChatInfo(),
+            icon: const Icon(Icons.info_outline, color: Color(0xFF262626), size: 24),
           ),
+        ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(0.5),
+          child: Divider(height: 0.5, color: Color(0xFFDBDBDB)),
         ),
       ),
-      body: Column(
-        children: [
-          // Messages list
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _db
-                  .collection('messages/${widget.chatId}/msgs')
-                  .orderBy('createdAt', descending: false)
-                  .snapshots(),
-              builder: (context, snap) {
-                if (!snap.hasData) return const SizedBox();
+      body: Column(children: [
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _db.collection('messages/${widget.chatId}/msgs').orderBy('createdAt').snapshots(),
+            builder: (context, snap) {
+              if (!snap.hasData) return const SizedBox();
+              final docs = snap.data!.docs;
+              final messages = docs.map((d) => {'id': d.id, ...(d.data() as Map<String, dynamic>)}).where((m) {
+                final deletedFor = (m['deletedFor'] as List?) ?? [];
+                return !deletedFor.contains(_me?.uid);
+              }).toList();
+              WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
-                final docs = snap.data!.docs;
-                final messages = docs
-                    .map((d) => {'id': d.id, ...(d.data() as Map<String, dynamic>)})
-                    .where((m) {
-                  final deletedFor = (m['deletedFor'] as List?) ?? [];
-                  return !deletedFor.contains(_currentUser?.uid) &&
-                      m['deletedForEveryone'] != true;
-                }).toList();
+              // Group by date
+              List<dynamic> items = [];
+              String? lastDate;
+              for (final msg in messages) {
+                final ts = msg['createdAt'] as Timestamp?;
+                if (ts != null) {
+                  final dateStr = DateFormat('yyyy-MM-dd').format(ts.toDate());
+                  if (dateStr != lastDate) {
+                    items.add({'_type': 'header', 'date': ts.toDate()});
+                    lastDate = dateStr;
+                  }
+                }
+                items.add(msg);
+              }
 
-                WidgetsBinding.instance
-                    .addPostFrameCallback((_) => _scrollToBottom());
-
-                return ListView.builder(
-                  controller: _scrollCtrl,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  itemCount: messages.length,
-                  itemBuilder: (context, i) {
-                    final msg = messages[i];
-                    final isMe = msg['senderId'] == _currentUser?.uid;
-                    return _MessageBubble(
-                      message: msg,
-                      isMe: isMe,
-                      formatTime: _formatMessageTime,
-                      onReply: () =>
-                          setState(() => _replyingTo = msg),
-                      onDelete: () => _showDeleteOptions(msg),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-
-          // Reply preview
-          if (_replyingTo != null)
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF5F5F5),
-                border: Border(
-                    top: BorderSide(color: Color(0xFFDBDBDB), width: 0.5)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 3,
-                    height: 36,
-                    color: const Color(0xFF0095F6),
-                    margin: const EdgeInsets.only(right: 8),
-                  ),
-                  Expanded(
-                    child: Text(
-                      _replyingTo?['text'] ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 13, color: Color(0xFF262626)),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => setState(() => _replyingTo = null),
-                    icon: const Icon(Icons.close, size: 18),
-                  ),
-                ],
-              ),
-            ),
-
-          // Input bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            decoration: const BoxDecoration(
-              border: Border(
-                  top: BorderSide(color: Color(0xFFDBDBDB), width: 0.5)),
-            ),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () {
-                    setState(() => _showEmojiPicker = !_showEmojiPicker);
-                    if (_showEmojiPicker) _focusNode.unfocus();
-                  },
-                  icon: const Icon(Icons.emoji_emotions_outlined,
-                      color: Color(0xFF8E8E8E)),
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _inputCtrl,
-                    focusNode: _focusNode,
-                    onTap: () =>
-                        setState(() => _showEmojiPicker = false),
-                    onChanged: (_) => setState(() {}),
-                    maxLines: 4,
-                    minLines: 1,
-                    style: const TextStyle(fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: 'Message...',
-                      hintStyle: const TextStyle(
-                          fontSize: 14, color: Color(0xFF8E8E8E)),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide:
-                            const BorderSide(color: Color(0xFFDBDBDB)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide:
-                            const BorderSide(color: Color(0xFFDBDBDB)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide:
-                            const BorderSide(color: Color(0xFFDBDBDB)),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: _inputCtrl.text.trim().isNotEmpty
-                      ? _sendMessage
-                      : null,
-                  child: Icon(
-                    Icons.send_rounded,
-                    color: _inputCtrl.text.trim().isNotEmpty
-                        ? const Color(0xFF0095F6)
-                        : const Color(0xFFDBDBDB),
-                    size: 28,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Emoji picker
-          if (_showEmojiPicker)
-            SizedBox(
-              height: 250,
-              child: EmojiPicker(
-                onEmojiSelected: (_, emoji) {
-                  _inputCtrl.text += emoji.emoji;
-                  setState(() {});
+              return ListView.builder(
+                controller: _scrollCtrl,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                itemCount: items.length,
+                itemBuilder: (context, i) {
+                  final item = items[i];
+                  if (item['_type'] == 'header') {
+                    return _DateHeader(label: _formatDateHeader(item['date']));
+                  }
+                  final isMe = item['senderId'] == _me?.uid;
+                  final isDeleted = item['deletedForEveryone'] == true || item['isDeleted'] == true;
+                  // Check if this is the last read message
+                  final nextItem = i < items.length - 1 ? items[i + 1] : null;
+                  final isLastMsg = nextItem == null || nextItem['_type'] == 'header' || 
+                      (isMe && (nextItem['senderId'] != _me?.uid));
+                  return _MessageBubble(
+                    message: item,
+                    isMe: isMe,
+                    isDeleted: isDeleted,
+                    otherUser: _otherUser,
+                    isLastRead: isMe && isLastMsg,
+                    onLongPress: () => _showMessageOptions(item),
+                    onReply: () => setState(() => _replyingTo = item),
+                  );
                 },
-                config: const Config(
-                  height: 250,
-                  emojiViewConfig: EmojiViewConfig(
-                    backgroundColor: Colors.white,
+              );
+            },
+          ),
+        ),
+
+        // Typing indicator
+        if (isTyping)
+          Padding(
+            padding: const EdgeInsets.only(left: 16, bottom: 4),
+            child: Row(children: [
+              AvatarWidget(url: _otherUser?['avatarUrl'], name: _otherUser?['fullName'] ?? '', size: 28),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(color: const Color(0xFFEFEFEF), borderRadius: BorderRadius.circular(22)),
+                child: Row(children: [
+                  _BouncingDot(delay: 0),
+                  const SizedBox(width: 3),
+                  _BouncingDot(delay: 150),
+                  const SizedBox(width: 3),
+                  _BouncingDot(delay: 300),
+                ]),
+              ),
+            ]),
+          ),
+
+        // Reply preview
+        if (_replyingTo != null)
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF5F5F5),
+              border: Border(top: BorderSide(color: Color(0xFFDBDBDB), width: 0.5)),
+            ),
+            child: Row(children: [
+              Container(width: 3, height: 32, color: const Color(0xFF0095F6), margin: const EdgeInsets.only(right: 8)),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Replying to ${_replyingTo!['senderId'] == _me?.uid ? 'yourself' : _otherUser?['fullName'] ?? 'user'}',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF0095F6))),
+                Text(_replyingTo!['content'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF8E8E8E))),
+              ])),
+              IconButton(onPressed: () => setState(() => _replyingTo = null),
+                  icon: const Icon(Icons.close, size: 18, color: Color(0xFF8E8E8E))),
+            ]),
+          ),
+
+        // Input bar — PWA style gray pill
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          color: Colors.white,
+          child: Row(children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(color: const Color(0xFFEFEFEF), borderRadius: BorderRadius.circular(24)),
+                child: Row(children: [
+                  if (_inputCtrl.text.isEmpty)
+                    GestureDetector(
+                      onTap: () {},
+                      child: Container(
+                        margin: const EdgeInsets.all(6),
+                        width: 32, height: 32,
+                        decoration: const BoxDecoration(color: Color(0xFF0095F6), shape: BoxShape.circle),
+                        child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                      ),
+                    ),
+                  Expanded(
+                    child: TextField(
+                      controller: _inputCtrl,
+                      focusNode: _focusNode,
+                      onTap: () => setState(() => _showEmojiPicker = false),
+                      onChanged: (_) => setState(() {}),
+                      maxLines: 4, minLines: 1,
+                      style: const TextStyle(fontSize: 15, color: Color(0xFF262626)),
+                      decoration: const InputDecoration(
+                        hintText: 'Message...',
+                        hintStyle: TextStyle(fontSize: 15, color: Color(0xFF8E8E8E)),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
                   ),
-                ),
+                  if (_inputCtrl.text.isEmpty) ...[
+                    IconButton(
+                      onPressed: () {},
+                      icon: const Icon(Icons.mic_none, color: Color(0xFF262626), size: 24),
+                      padding: const EdgeInsets.all(8),
+                    ),
+                    IconButton(
+                      onPressed: () { setState(() => _showEmojiPicker = !_showEmojiPicker); if (_showEmojiPicker) _focusNode.unfocus(); },
+                      icon: const Icon(Icons.sentiment_satisfied_alt_outlined, color: Color(0xFF262626), size: 24),
+                      padding: const EdgeInsets.all(8),
+                    ),
+                  ] else ...[
+                    IconButton(
+                      onPressed: () { setState(() => _showEmojiPicker = !_showEmojiPicker); if (_showEmojiPicker) _focusNode.unfocus(); },
+                      icon: const Icon(Icons.sentiment_satisfied_alt_outlined, color: Color(0xFF262626), size: 22),
+                      padding: const EdgeInsets.all(6),
+                    ),
+                    IconButton(
+                      onPressed: _sendMessage,
+                      icon: const Icon(Icons.send_rounded, color: Color(0xFF0095F6), size: 24),
+                      padding: const EdgeInsets.only(right: 8),
+                    ),
+                  ],
+                ]),
               ),
             ),
-        ],
-      ),
+          ]),
+        ),
+
+        if (_showEmojiPicker)
+          SizedBox(
+            height: 250,
+            child: EmojiPicker(
+              onEmojiSelected: (_, emoji) { _inputCtrl.text += emoji.emoji; setState(() {}); },
+              config: const Config(height: 250, emojiViewConfig: EmojiViewConfig(backgroundColor: Colors.white)),
+            ),
+          ),
+      ]),
     );
   }
 
-  void _showDeleteOptions(Map<String, dynamic> msg) {
-    final isMe = msg['senderId'] == _currentUser?.uid;
+  void _showMessageOptions(Map<String, dynamic> msg) {
+    final isMe = msg['senderId'] == _me?.uid;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDBDBDB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(color: const Color(0xFFDBDBDB), borderRadius: BorderRadius.circular(2)))),
+          // Emoji reactions
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: ['❤️', '😂', '😮', '😢', '😡', '👍'].map((e) =>
+                GestureDetector(
+                  onTap: () { Navigator.pop(context); _addReaction(msg['id'], e); },
+                  child: Text(e, style: const TextStyle(fontSize: 28)),
+                )
+              ).toList(),
             ),
-            ListTile(
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _replyingTo = msg);
-              },
-              leading: const Icon(Icons.reply),
-              title: const Text('Reply'),
-            ),
-            if (isMe) ...[
-              ListTile(
-                onTap: () {
-                  Navigator.pop(context);
-                  _deleteMessage(msg['id'], forEveryone: true);
-                },
-                leading: const Icon(Icons.delete_forever,
-                    color: Color(0xFFED4956)),
-                title: const Text('Delete for everyone',
-                    style: TextStyle(color: Color(0xFFED4956))),
-              ),
-            ],
-            ListTile(
-              onTap: () {
-                Navigator.pop(context);
-                _deleteMessage(msg['id']);
-              },
-              leading:
-                  const Icon(Icons.delete_outline, color: Color(0xFFED4956)),
-              title: const Text('Delete for me',
-                  style: TextStyle(color: Color(0xFFED4956))),
-            ),
-            const SizedBox(height: 8),
+          ),
+          const Divider(height: 0, color: Color(0xFFDBDBDB)),
+          _sheetBtn(Icons.reply_outlined, 'Reply', const Color(0xFF262626), () {
+            Navigator.pop(context);
+            setState(() => _replyingTo = msg);
+          }),
+          const Divider(height: 0, color: Color(0xFFDBDBDB), indent: 56),
+          _sheetBtn(Icons.delete_outline, 'Delete for me', const Color(0xFF262626), () {
+            Navigator.pop(context);
+            _db.collection('messages/${widget.chatId}/msgs').doc(msg['id'])
+                .update({'deletedFor': FieldValue.arrayUnion([_me!.uid])});
+          }),
+          if (isMe) ...[
+            const Divider(height: 0, color: Color(0xFFDBDBDB), indent: 56),
+            _sheetBtn(Icons.delete_sweep_outlined, 'Unsend', const Color(0xFFED4956), () {
+              Navigator.pop(context);
+              _db.collection('messages/${widget.chatId}/msgs').doc(msg['id'])
+                  .update({'deletedForEveryone': true, 'content': ''});
+            }),
           ],
-        ),
+          const SizedBox(height: 16),
+        ]),
       ),
     );
+  }
+
+  Widget _sheetBtn(IconData icon, String label, Color color, VoidCallback onTap) {
+    return ListTile(
+      onTap: onTap,
+      leading: Icon(icon, color: color, size: 24),
+      title: Text(label, style: TextStyle(fontSize: 15, color: color)),
+    );
+  }
+
+  void _showChatInfo() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(color: const Color(0xFFDBDBDB), borderRadius: BorderRadius.circular(2)))),
+          _sheetBtn(Icons.cleaning_services_outlined, 'Clear Chat', const Color(0xFFED4956), () async {
+            Navigator.pop(context);
+            final q = await _db.collection('messages/${widget.chatId}/msgs').get();
+            final batch = _db.batch();
+            for (final d in q.docs) {
+              batch.update(d.reference, {'deletedFor': FieldValue.arrayUnion([_me!.uid])});
+            }
+            await batch.commit();
+          }),
+          const Divider(height: 0, color: Color(0xFFDBDBDB), indent: 56),
+          _sheetBtn(Icons.delete_outline, 'Delete Chat', const Color(0xFFED4956), () async {
+            Navigator.pop(context);
+            await _db.collection('chats').doc(widget.chatId).delete();
+            if (mounted) context.go('/app');
+          }),
+          const SizedBox(height: 16),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _addReaction(String msgId, String emoji) async {
+    await _db.collection('messages/${widget.chatId}/msgs').doc(msgId).update({
+      'reactions.$emoji': FieldValue.increment(1),
+    });
   }
 
   @override
@@ -468,130 +431,191 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-class _MessageBubble extends StatelessWidget {
-  final Map<String, dynamic> message;
-  final bool isMe;
-  final String Function(Timestamp?) formatTime;
-  final VoidCallback onReply;
-  final VoidCallback onDelete;
+class _DateHeader extends StatelessWidget {
+  final String label;
+  const _DateHeader({required this.label});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF8E8E8E), fontWeight: FontWeight.w500)),
+      ),
+    );
+  }
+}
 
-  const _MessageBubble({
-    required this.message,
-    required this.isMe,
-    required this.formatTime,
-    required this.onReply,
-    required this.onDelete,
-  });
+class _BouncingDot extends StatefulWidget {
+  final int delay;
+  const _BouncingDot({required this.delay});
+  @override
+  State<_BouncingDot> createState() => _BouncingDotState();
+}
+
+class _BouncingDotState extends State<_BouncingDot> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..repeat(reverse: true);
+    _anim = Tween<double>(begin: 0, end: -6).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    Future.delayed(Duration(milliseconds: widget.delay), () { if (mounted) _ctrl.forward(); });
+  }
 
   @override
   Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => Transform.translate(
+        offset: Offset(0, _anim.value),
+        child: Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF8E8E8E), shape: BoxShape.circle)),
+      ),
+    );
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+}
+
+class _MessageBubble extends StatelessWidget {
+  final Map<String, dynamic> message;
+  final bool isMe;
+  final bool isDeleted;
+  final bool isLastRead;
+  final Map<String, dynamic>? otherUser;
+  final VoidCallback onLongPress;
+  final VoidCallback onReply;
+
+  const _MessageBubble({
+    required this.message, required this.isMe, required this.isDeleted,
+    required this.isLastRead, required this.otherUser,
+    required this.onLongPress, required this.onReply,
+  });
+
+  String _timeStr(Timestamp? ts) {
+    if (ts == null) return '';
+    return DateFormat('h:mm a').format(ts.toDate());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final content = message['content'] as String? ?? '';
     final replyTo = message['replyTo'] as Map?;
+    final reactions = message['reactions'] as Map?;
     final readBy = (message['readBy'] as List?) ?? [];
-    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    final me = FirebaseAuth.instance.currentUser;
 
     return GestureDetector(
-      onLongPress: onDelete,
+      onLongPress: onLongPress,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 4),
+        padding: EdgeInsets.only(bottom: 2, left: isMe ? 48 : 0, right: isMe ? 0 : 48),
         child: Row(
-          mainAxisAlignment:
-              isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Container(
-              constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.7),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isMe
-                    ? const Color(0xFF0095F6)
-                    : const Color(0xFFF0F0F0),
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isMe ? 18 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 18),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Reply preview
-                  if (replyTo != null)
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      margin: const EdgeInsets.only(bottom: 6),
-                      decoration: BoxDecoration(
-                        color: isMe
-                            ? Colors.white.withOpacity(0.2)
-                            : Colors.black.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border(
-                          left: BorderSide(
-                            color: isMe
-                                ? Colors.white
-                                : const Color(0xFF0095F6),
-                            width: 3,
-                          ),
-                        ),
-                      ),
-                      child: Text(
-                        replyTo['text'] ?? '',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isMe
-                              ? Colors.white.withOpacity(0.8)
-                              : const Color(0xFF8E8E8E),
-                        ),
-                      ),
+            if (!isMe) ...[
+              AvatarWidget(url: otherUser?['avatarUrl'], name: otherUser?['fullName'] ?? '', size: 28),
+              const SizedBox(width: 6),
+            ],
+            Column(
+              crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Container(
+                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.65),
+                  padding: isDeleted
+                      ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
+                      : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDeleted
+                        ? Colors.transparent
+                        : isMe ? const Color(0xFF0095F6) : const Color(0xFFEFEFEF),
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(22),
+                      topRight: const Radius.circular(22),
+                      bottomLeft: Radius.circular(isMe ? 22 : 4),
+                      bottomRight: Radius.circular(isMe ? 4 : 22),
                     ),
-
-                  // Message text
-                  Text(
-                    message['text'] ?? '',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isMe ? Colors.white : const Color(0xFF262626),
-                    ),
+                    border: isDeleted ? Border.all(color: const Color(0xFFDBDBDB)) : null,
                   ),
-
-                  // Timestamp + read status
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        formatTime(message['createdAt'] as Timestamp?),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: isMe
-                              ? Colors.white.withOpacity(0.7)
-                              : const Color(0xFF8E8E8E),
+                      // Reply preview
+                      if (replyTo != null)
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          margin: const EdgeInsets.only(bottom: 6),
+                          decoration: BoxDecoration(
+                            color: isMe ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border(left: BorderSide(color: isMe ? Colors.white : const Color(0xFF0095F6), width: 3)),
+                          ),
+                          child: Text(replyTo['content'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 12, color: isMe ? Colors.white.withOpacity(0.8) : const Color(0xFF8E8E8E))),
                         ),
-                      ),
-                      if (isMe) ...[
-                        const SizedBox(width: 4),
-                        Icon(
-                          readBy.length > 1
-                              ? Icons.done_all
-                              : Icons.done,
-                          size: 12,
-                          color: readBy.length > 1
-                              ? Colors.white
-                              : Colors.white.withOpacity(0.7),
-                        ),
-                      ],
+                      // Message text
+                      isDeleted
+                          ? Row(mainAxisSize: MainAxisSize.min, children: [
+                              Icon(Icons.block, size: 14, color: Colors.grey.shade400),
+                              const SizedBox(width: 4),
+                              Text('This message was unsent', style: TextStyle(fontSize: 13, color: Colors.grey.shade400, fontStyle: FontStyle.italic)),
+                            ])
+                          : Text(content, style: TextStyle(fontSize: 15, color: isMe ? Colors.white : const Color(0xFF262626))),
                     ],
                   ),
-                ],
-              ),
+                ),
+                // Reactions
+                if (reactions != null && reactions.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(top: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white, borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFDBDBDB)),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)],
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min,
+                      children: reactions.entries.map((e) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Text(e.key, style: const TextStyle(fontSize: 12)),
+                          if ((e.value as int) > 1) ...[
+                            const SizedBox(width: 2),
+                            Text('${e.value}', style: const TextStyle(fontSize: 10, color: Color(0xFF8E8E8E), fontWeight: FontWeight.w600)),
+                          ],
+                        ]),
+                      )).toList(),
+                    ),
+                  ),
+              ],
             ),
+            if (isMe) ...[
+              const SizedBox(width: 4),
+              _ReadReceipt(readBy: readBy, otherUser: otherUser, isPending: message['isPending'] == true),
+            ],
           ],
         ),
       ),
     );
+  }
+}
+
+class _ReadReceipt extends StatelessWidget {
+  final List readBy;
+  final Map<String, dynamic>? otherUser;
+  final bool isPending;
+  const _ReadReceipt({required this.readBy, required this.otherUser, required this.isPending});
+
+  @override
+  Widget build(BuildContext context) {
+    if (isPending) return const SizedBox(width: 14, height: 14, child: CircleAvatar(backgroundColor: Color(0xFF8E8E8E)));
+    final isRead = otherUser != null && readBy.contains(otherUser!['id']);
+    if (isRead) {
+      return SizedBox(width: 14, height: 14,
+        child: AvatarWidget(url: otherUser!['avatarUrl'], name: otherUser!['fullName'] ?? '', size: 14));
+    }
+    return const Icon(Icons.check_circle, size: 14, color: Color(0xFF8E8E8E));
   }
 }
