@@ -10,35 +10,7 @@ const Map<String, dynamic> _serviceAccountJson = {
   "type": "service_account",
   "project_id": "linkup-c22fa",
   "private_key_id": "744bb32c3447d8dc7aeae3077a32412edc034566",
-  "private_key": "-----BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCvN8/Mmq9m/B2F
-QpCtvozrGxiZW8gI76aFAtg/AMlnC+ZJ/r5OGbC7EoUkGWcPGqxdyyivvJR2wjkf
-8NszSEsthPfWmFOEc/mMpunrDDdPi+/Rjq1ey7sNWxrvB6hxYB2pwZkVa+ocAREF
-Ft0fQ0aaIGbP7ia4lMMGdBcnKUODwNHb7YHR9ZHDbW7+96Aq/fljzUH9lAvbzqQT
-YAj+ObT/JdyRlk5fVdqfHs0RPSPMLJgu2LE5fyHfKGzSs40PDHlctIPoPFE4KFVk
-RoC2YYJzFFzSGcbtc9ELgcZVt7butvztLH8ONZ+TXvn1iExwdUlu7Pm5boCqvfHZ
-BNMoRyZpAgMBAAECggEAA1bXF/99dRh0+spAm1PyFEn0YTK24+jt9oN4q7dgCeTJ
-olRRQxZGFZlFOq/AsSJ4eKMEgbvEAR2BoHi73giUQYgS8Wl+s4ZtSuE5yrxgALJz
-RrcHPU9x0SxCndaeG1HrBs1fznZYAL7KWMYfML5q9BAqaBngX8H+PkXvuD6W/VQG
-rLJtRCcbAfiionqsBar82PuTDdKmDy6XYqME3I91DNT44iEhXQb3wfZGEA87bYX5
-Bjhsn8zk6Q12BGVjvWJTR/XqO5f7sdMBizOzavx4R+eYsEZpbeMNoYZoYZS/XJVi
-0ziGDJswlXdxXFxSUtFrWI7pDACqApY75XbYpINo3QKBgQDgyvHRTZ9XMbdc8NQr
-s52f/YZY3UrMgKrFIxbl9ALwIyET1muwb1jnebE/ZiTfqCiH6JMnNGbj41+RvPo5
-SMalLoRAiTTMNIv782I8noCYYIZf5WBT1tamYctts0lFV1U/QkIGSsV76cecdw5B
-XeF0CNRwsO3wbwczZY676YdOVQKBgQDHiv+Uf+knE2SP/CQRz/6pVPkfjg/qJBHK
-lq1YE4mMRMr6jUMZzBikUOc/ljUPp/8CYehJm6hKs9aqXaWrADba5Dei9XL3a5o/
-Pfmkv7PVuI2U6wqTQiaLC3OaRyjuaAAZCfeHV0BGPGZz9hht2aSrhvaqW8L3BOLP
-V9ODA2ljxQKBgQDDNzt9ut1PybslmXeIZDnVAUS006jrpCmpfema1affh4JoSePH
-m0sn6oTFPB11pgFc1dtFRrq72W/bjrP3H35zYMw1h3I0jMWsjhaX8kZXDixkBzz6
-Ui6i23bg07wj3c4IW7Ae6rxJ+iIBfVsB5VevfyOOofhgvusP9XhZNFru6QKBgDxu
-lEjdFDeJYANbUXEzlOSjn283DwrSMbExQP5TrGyWyQJoldHSRgQ9nEtdqmQ7dLe7
-/yWLxsQZAwJFqk7HmdVhGJh5zX+xTt2oX1rN1CD966MWK/W9Kv8hULmAo5zQUndC
-1XxfqE+dK0ojVfKu33gzP7EIaVt2V1qENsKO3fQhAoGADonvV/U/1BRYPuQJu/5U
-Fw7uLomFzFJbwzUqWwB5/OdGYTZcYvnro58sn4WQx/AObQBkGNQvuA+FuFpTRP7O
-tMwW8BO7J0IFFPrGfc+zU8i2yzOseDCj9m5xf6gS/jiObrkJNHOzi1atk0QB21iR
-J5/860GgvaIryhiZKm/rb4Y=
------END PRIVATE KEY-----
-",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCvN8/Mmq9m/B2F\nQpCtvozrGxiZW8gI76aFAtg/AMlnC+ZJ/r5OGbC7EoUkGWcPGqxdyyivvJR2wjkf\n8NszSEsthPfWmFOEc/mMpunrDDdPi+/Rjq1ey7sNWxrvB6hxYB2pwZkVa+ocAREF\nFt0fQ0aaIGbP7ia4lMMGdBcnKUODwNHb7YHR9ZHDbW7+96Aq/fljzUH9lAvbzqQT\nYAj+ObT/JdyRlk5fVdqfHs0RPSPMLJgu2LE5fyHfKGzSs40PDHlctIPoPFE4KFVk\nRoC2YYJzFFzSGcbtc9ELgcZVt7butvztLH8ONZ+TXvn1iExwdUlu7Pm5boCqvfHZ\nBNMoRyZpAgMBAAECggEAA1bXF/99dRh0+spAm1PyFEn0YTK24+jt9oN4q7dgCeTJ\nolRRQxZGFZlFOq/AsSJ4eKMEgbvEAR2BoHi73giUQYgS8Wl+s4ZtSuE5yrxgALJz\nRrcHPU9x0SxCndaeG1HrBs1fznZYAL7KWMYfML5q9BAqaBngX8H+PkXvuD6W/VQG\nrLJtRCcbAfiionqsBar82PuTDdKmDy6XYqME3I91DNT44iEhXQb3wfZGEA87bYX5\nBjhsn8zk6Q12BGVjvWJTR/XqO5f7sdMBizOzavx4R+eYsEZpbeMNoYZoYZS/XJVi\n0ziGDJswlXdxXFxSUtFrWI7pDACqApY75XbYpINo3QKBgQDgyvHRTZ9XMbdc8NQr\ns52f/YZY3UrMgKrFIxbl9ALwIyET1muwb1jnebE/ZiTfqCiH6JMnNGbj41+RvPo5\nSMalLoRAiTTMNIv782I8noCYYIZf5WBT1tamYctts0lFV1U/QkIGSsV76cecdw5B\nXeF0CNRwsO3wbwczZY676YdOVQKBgQDHiv+Uf+knE2SP/CQRz/6pVPkfjg/qJBHK\nlq1YE4mMRMr6jUMZzBikUOc/ljUPp/8CYehJm6hKs9aqXaWrADba5Dei9XL3a5o/\nPfmkv7PVuI2U6wqTQiaLC3OaRyjuaAAZCfeHV0BGPGZz9hht2aSrhvaqW8L3BOLP\nV9ODA2ljxQKBgQDDNzt9ut1PybslmXeIZDnVAUS006jrpCmpfema1affh4JoSePH\nm0sn6oTFPB11pgFc1dtFRrq72W/bjrP3H35zYMw1h3I0jMWsjhaX8kZXDixkBzz6\nUi6i23bg07wj3c4IW7Ae6rxJ+iIBfVsB5VevfyOOofhgvusP9XhZNFru6QKBgDxu\nlEjdFDeJYANbUXEzlOSjn283DwrSMbExQP5TrGyWyQJoldHSRgQ9nEtdqmQ7dLe7\n/yWLxsQZAwJFqk7HmdVhGJh5zX+xTt2oX1rN1CD966MWK/W9Kv8hULmAo5zQUndC\n1XxfqE+dK0ojVfKu33gzP7EIaVt2V1qENsKO3fQhAoGADonvV/U/1BRYPuQJu/5U\nFw7uLomFzFJbwzUqWwB5/OdGYTZcYvnro58sn4WQx/AObQBkGNQvuA+FuFpTRP7O\ntMwW8BO7J0IFFPrGfc+zU8i2yzOseDCj9m5xf6gS/jiObrkJNHOzi1atk0QB21iR\nJ5/860GgvaIryhiZKm/rb4Y=\n-----END PRIVATE KEY-----\n",
   "client_email": "firebase-adminsdk-fbsvc@linkup-c22fa.iam.gserviceaccount.com",
   "client_id": "106488163270101994881",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
@@ -46,7 +18,6 @@ J5/860GgvaIryhiZKm/rb4Y=
 };
 
 const String _projectId = 'linkup-c22fa';
-
 const AndroidNotificationChannel linkUpChannel = AndroidNotificationChannel(
   'linkup_messages',
   'LinkUp Messages',
@@ -79,13 +50,11 @@ class NotificationService {
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(linkUpChannel);
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     await _localPlugin.initialize(
       const InitializationSettings(android: androidSettings),
     );
 
-    // App foreground এ থাকলে local notification দেখাও
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final n = message.notification;
       if (n == null) return;
@@ -167,7 +136,6 @@ class NotificationService {
     required String chatId,
   }) async {
     if (recipientFcmToken.isEmpty) return;
-
     final accessToken = await _getAccessToken();
     if (accessToken == null) return;
 
