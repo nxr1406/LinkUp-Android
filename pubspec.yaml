@@ -1,55 +1,62 @@
-name: Build Flutter APK
+name: linkup
+description: LinkUp - A modern messaging app
+publish_to: 'none'
+version: 1.0.0+1
 
-on:
-  push:
-    branches: [ "main", "master" ]
-  workflow_dispatch:
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+  flutter: '>=3.19.3'
 
-jobs:
-  build:
-    name: Build ARMv7 + ARM64 APK
-    runs-on: ubuntu-latest
+dependencies:
+  flutter:
+    sdk: flutter
 
-    steps:
-      # 1️⃣ Checkout repo
-      - name: Checkout source code
-        uses: actions/checkout@v4
+  # Firebase
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.4
+  cloud_firestore: ^4.15.5
+  firebase_storage: ^11.6.9
 
-      # 2️⃣ Setup Java
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+  # State Management
+  provider: ^6.1.2
 
-      # 3️⃣ Setup Flutter
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
-          cache: true
+  # Navigation
+  go_router: ^13.2.0
 
-      # 4️⃣ Install dependencies
-      - name: Install dependencies
-        run: flutter pub get
+  # UI
+  cached_network_image: ^3.3.1
+  image_picker: ^1.0.7
+  timeago: ^3.6.1
+  emoji_picker_flutter: ^2.1.1
 
-      # 5️⃣ Generate App Icon (Android only)
-      - name: Generate App Icon
-        run: flutter pub run flutter_launcher_icons
+  # Utils
+  intl: ^0.19.0
+  http: ^1.2.1
+  shared_preferences: ^2.2.3
+  flutter_local_notifications: ^17.1.2
+  uuid: ^4.3.3
 
-      # 6️⃣ Generate Splash Screen (Android only)
-      - name: Generate Splash Screen
-        run: flutter pub run flutter_native_splash:create
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.2
 
-      # 7️⃣ Build Split APK (ARMv7 + ARM64)
-      - name: Build Split APK
-        run: flutter build apk --release --split-per-abi --target-platform android-arm,android-arm64
+flutter:
+  uses-material-design: true
 
-      # 8️⃣ Upload APKs as GitHub Artifact
-      - name: Upload APKs
-        uses: actions/upload-artifact@v4
-        with:
-          name: linkup-apks
-          path: build/app/outputs/flutter-apk/*.apk
-          retention-days: 30
+  assets:
+    - assets/splash.png
+    - assets/ic_launcher.png
+
+flutter_icons:
+  android: true
+  ios: false
+  image_path: "assets/ic_launcher.png"
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/splash.png
+  android: true
+  ios: false
