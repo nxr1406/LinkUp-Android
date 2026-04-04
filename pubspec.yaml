@@ -17,7 +17,7 @@ dependencies:
   cloud_firestore: ^4.15.5
   firebase_storage: ^11.6.9
   firebase_messaging: ^14.7.0
-  googleapis_auth: ^1.4.1
+  dart_jsonwebtoken: ^2.8.0
 
   # State Management
   provider: ^6.1.2
