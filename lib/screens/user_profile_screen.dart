@@ -89,26 +89,29 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 name: _user!['fullName'] ?? '',
                 size: 80),
             const SizedBox(height: 12),
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Text(_user!['fullName'] ?? '',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w600)),
-              if (_user!['isVerified'] == true) ...[
-                const SizedBox(width: 4),
-                const VerifiedBadge(size: 18),
-              ],
-            ]),
-            Text('@${_user!['username'] ?? ''}',
-                style: const TextStyle(
-                    fontSize: 14, color: Color(0xFF8E8E8E))),
-            if ((_user!['bio'] as String?)?.isNotEmpty == true)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(_user!['bio'],
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontSize: 14, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF262626))),
-              ),
+            Builder(builder: (ctx) {
+              final isDark = Theme.of(ctx).brightness == Brightness.dark;
+              final textPrimary = isDark ? Colors.white : const Color(0xFF262626);
+              return Column(children: [
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Text(_user!['fullName'] ?? '',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textPrimary)),
+                  if (_user!['isVerified'] == true) ...[
+                    const SizedBox(width: 4),
+                    const VerifiedBadge(size: 18),
+                  ],
+                ]),
+                Text('@${_user!['username'] ?? ''}',
+                    style: const TextStyle(fontSize: 14, color: Color(0xFF8E8E8E))),
+                if ((_user!['bio'] as String?)?.isNotEmpty == true)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(_user!['bio'],
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 14, color: textPrimary)),
+                  ),
+              ]);
+            }),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _openChat,
