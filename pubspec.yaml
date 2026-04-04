@@ -56,7 +56,7 @@ flutter:
 
 flutter_icons:
   android: true
-  ios: true
+  ios: false
   image_path: "assets/ic_launcher.png"
 
 flutter_native_splash:
