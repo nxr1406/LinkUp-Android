@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build APK
+    name: Build ARMv7 + ARM64 APK
     runs-on: ubuntu-latest
 
     steps:
@@ -27,25 +27,25 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Create google-services.json
-        env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-        run: |
-          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
-            echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
-          else
-            echo "GOOGLE_SERVICES_JSON secret not set, using repo file if exists"
-          fi
-
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build Split APK (ARMv7 + ARM64)
+      # Generate App Icon
+      - name: Generate App Icon
+        run: flutter pub run flutter_launcher_icons:main
+
+      # Generate Splash Screen
+      - name: Generate Splash Screen
+        run: flutter pub run flutter_native_splash:create
+
+      # Build Split APK for ARMv7 + ARM64
+      - name: Build Split APK
         run: flutter build apk --release --split-per-abi --target-platform android-arm,android-arm64
 
-      - name: Upload APK
+      # Upload APKs as GitHub Artifact
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: linkup-release
+          name: linkup-apks
           path: build/app/outputs/flutter-apk/*.apk
           retention-days: 30
