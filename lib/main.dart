@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'firebase_options.dart';
@@ -17,10 +18,19 @@ import 'screens/privacy_screen.dart';
 import 'screens/blocked_users_screen.dart';
 import 'screens/main_layout.dart';
 import 'screens/suspended_screen.dart';
+import 'services/notification_service.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ Background handler আগে register করো — Firebase init এর আগে
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // ✅ Notification service initialize
+  await NotificationService.initialize();
+
   runApp(
     MultiProvider(
       providers: [

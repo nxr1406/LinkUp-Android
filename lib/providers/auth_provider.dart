@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/notification_service.dart';
 
 class LinkUpAuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -25,6 +26,9 @@ class LinkUpAuthProvider extends ChangeNotifier {
     _userDataSub?.cancel();
 
     if (user != null) {
+      // FCM token save করো
+      NotificationService.saveToken(user.uid);
+
       // Set online status
       _db.doc('users/${user.uid}').set({
         'isOnline': true,
@@ -57,6 +61,7 @@ class LinkUpAuthProvider extends ChangeNotifier {
 
   Future<void> signOut() async {
     await setOffline();
+    await NotificationService.clearToken(); // FCM token মুছে দাও
     await _auth.signOut();
   }
 

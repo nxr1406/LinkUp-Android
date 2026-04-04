@@ -7,6 +7,7 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../widgets/avatar_widget.dart';
 import '../widgets/verified_badge.dart';
+import '../services/notification_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -27,6 +28,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _loading = true;
   bool _showEmojiPicker = false;
   Map<String, dynamic>? _replyingTo;
+  String _myUsername = 'User'; // Sender name for notifications
 
   @override
   void initState() {
@@ -49,6 +51,16 @@ class _ChatScreenState extends State<ChatScreen> {
       _db.collection('chats').doc(widget.chatId).snapshots().listen((snap) {
         if (mounted && snap.exists) setState(() => _chatData = snap.data());
       });
+      // Load current user's name for notification title
+      if (_me != null) {
+        final mySnap = await _db.collection('users').doc(_me!.uid).get();
+        if (mySnap.exists && mounted) {
+          final d = mySnap.data()!;
+          setState(() {
+            _myUsername = d['fullName'] ?? d['username'] ?? 'User';
+          });
+        }
+      }
       setState(() => _loading = false);
     } catch (_) { setState(() => _loading = false); }
   }
@@ -86,6 +98,17 @@ class _ChatScreenState extends State<ChatScreen> {
         'unreadCount.${_otherUser?['id']}': FieldValue.increment(1),
       });
       _scrollToBottom();
+
+      // ✅ Push notification পাঠাও recipient কে
+      final recipientToken = _otherUser?['fcmToken'] as String?;
+      if (recipientToken != null && recipientToken.isNotEmpty) {
+        NotificationService.sendMessageNotification(
+          recipientFcmToken: recipientToken,
+          senderName: _myUsername,
+          messageText: text,
+          chatId: widget.chatId,
+        );
+      }
     } catch (_) {}
   }
 
