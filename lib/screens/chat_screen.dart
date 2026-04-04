@@ -72,7 +72,12 @@ class _ChatScreenState extends State<ChatScreen> {
         'senderId': _me!.uid,
         'createdAt': FieldValue.serverTimestamp(),
         'readBy': [_me!.uid],
-        if (reply != null) 'replyTo': reply,
+        // শুধু id+senderId+content স্টোর করো - full snapshot নয়
+        if (reply != null) 'replyTo': {
+          'id': reply['id'],
+          'senderId': reply['senderId'],
+          'content': reply['content'] ?? '',
+        },
       });
       await _db.collection('chats').doc(widget.chatId).update({
         'lastMessage': text,
@@ -113,16 +118,23 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFF0095F6))));
     final isTyping = (_chatData?['typing'] as List?)?.contains(_otherUser?['id']) == true;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF000000) : Colors.white;
+    final surfaceColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final inputPillColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEFEFEF);
+    final receivedBubbleColor = isDark ? const Color(0xFF262D35) : const Color(0xFFEFEFEF);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF262626);
+    final dividerColor = isDark ? const Color(0xFF38383A) : const Color(0xFFDBDBDB);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: surfaceColor,
         elevation: 0,
         leadingWidth: 40,
         leading: IconButton(
           onPressed: () => context.go('/app'),
-          icon: const Icon(Icons.arrow_back_ios, size: 20, color: Color(0xFF262626)),
+          icon: Icon(Icons.arrow_back_ios, size: 20, color: textPrimary),
         ),
         title: GestureDetector(
           onTap: () { if (_otherUser?['id'] != null) context.go('/app/user/${_otherUser!['id']}'); },
@@ -133,7 +145,7 @@ class _ChatScreenState extends State<ChatScreen> {
               Row(children: [
                 Text(
                   (_chatData?['nicknames'] as Map?)?[_otherUser?['id']] ?? _otherUser?['username'] ?? 'Unknown',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF262626)),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
                 ),
                 if (_otherUser?['isVerified'] == true) ...[const SizedBox(width: 3), const VerifiedBadge(size: 13)],
               ]),
@@ -147,12 +159,12 @@ class _ChatScreenState extends State<ChatScreen> {
         actions: [
           IconButton(
             onPressed: () => _showChatInfo(),
-            icon: const Icon(Icons.info_outline, color: Color(0xFF262626), size: 24),
+            icon: Icon(Icons.info_outline, color: textPrimary, size: 24),
           ),
         ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(0.5),
-          child: Divider(height: 0.5, color: Color(0xFFDBDBDB)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(0.5),
+          child: Divider(height: 0.5, color: dividerColor),
         ),
       ),
       body: Column(children: [
@@ -194,9 +206,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   }
                   final isMe = item['senderId'] == _me?.uid;
                   final isDeleted = item['deletedForEveryone'] == true || item['isDeleted'] == true;
-                  // Check if this is the last read message
                   final nextItem = i < items.length - 1 ? items[i + 1] : null;
-                  final isLastMsg = nextItem == null || nextItem['_type'] == 'header' || 
+                  final isLastMsg = nextItem == null || nextItem['_type'] == 'header' ||
                       (isMe && (nextItem['senderId'] != _me?.uid));
                   return _MessageBubble(
                     message: item,
@@ -204,6 +215,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     isDeleted: isDeleted,
                     otherUser: _otherUser,
                     isLastRead: isMe && isLastMsg,
+                    chatId: widget.chatId,
                     onLongPress: () => _showMessageOptions(item),
                     onReply: () => setState(() => _replyingTo = item),
                   );
@@ -222,7 +234,7 @@ class _ChatScreenState extends State<ChatScreen> {
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(color: const Color(0xFFEFEFEF), borderRadius: BorderRadius.circular(22)),
+                decoration: BoxDecoration(color: receivedBubbleColor, borderRadius: BorderRadius.circular(22)),
                 child: Row(children: [
                   _BouncingDot(delay: 0),
                   const SizedBox(width: 3),
@@ -238,9 +250,9 @@ class _ChatScreenState extends State<ChatScreen> {
         if (_replyingTo != null)
           Container(
             padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF5F5F5),
-              border: Border(top: BorderSide(color: Color(0xFFDBDBDB), width: 0.5)),
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              border: Border(top: BorderSide(color: dividerColor, width: 0.5)),
             ),
             child: Row(children: [
               Container(width: 3, height: 32, color: const Color(0xFF0095F6), margin: const EdgeInsets.only(right: 8)),
@@ -255,14 +267,14 @@ class _ChatScreenState extends State<ChatScreen> {
             ]),
           ),
 
-        // Input bar — PWA style gray pill
+        // Input bar
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          color: Colors.white,
+          color: surfaceColor,
           child: Row(children: [
             Expanded(
               child: Container(
-                decoration: BoxDecoration(color: const Color(0xFFEFEFEF), borderRadius: BorderRadius.circular(24)),
+                decoration: BoxDecoration(color: inputPillColor, borderRadius: BorderRadius.circular(24)),
                 child: Row(children: [
                   if (_inputCtrl.text.isEmpty)
                     GestureDetector(
@@ -281,30 +293,30 @@ class _ChatScreenState extends State<ChatScreen> {
                       onTap: () => setState(() => _showEmojiPicker = false),
                       onChanged: (_) => setState(() {}),
                       maxLines: 4, minLines: 1,
-                      style: const TextStyle(fontSize: 15, color: Color(0xFF262626)),
-                      decoration: const InputDecoration(
+                      style: TextStyle(fontSize: 15, color: textPrimary),
+                      decoration: InputDecoration(
                         hintText: 'Message...',
-                        hintStyle: TextStyle(fontSize: 15, color: Color(0xFF8E8E8E)),
+                        hintStyle: const TextStyle(fontSize: 15, color: Color(0xFF8E8E8E)),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       ),
                     ),
                   ),
                   if (_inputCtrl.text.isEmpty) ...[
                     IconButton(
                       onPressed: () {},
-                      icon: const Icon(Icons.mic_none, color: Color(0xFF262626), size: 24),
+                      icon: Icon(Icons.mic_none, color: textPrimary, size: 24),
                       padding: const EdgeInsets.all(8),
                     ),
                     IconButton(
                       onPressed: () { setState(() => _showEmojiPicker = !_showEmojiPicker); if (_showEmojiPicker) _focusNode.unfocus(); },
-                      icon: const Icon(Icons.sentiment_satisfied_alt_outlined, color: Color(0xFF262626), size: 24),
+                      icon: Icon(Icons.sentiment_satisfied_alt_outlined, color: textPrimary, size: 24),
                       padding: const EdgeInsets.all(8),
                     ),
                   ] else ...[
                     IconButton(
                       onPressed: () { setState(() => _showEmojiPicker = !_showEmojiPicker); if (_showEmojiPicker) _focusNode.unfocus(); },
-                      icon: const Icon(Icons.sentiment_satisfied_alt_outlined, color: Color(0xFF262626), size: 22),
+                      icon: Icon(Icons.sentiment_satisfied_alt_outlined, color: textPrimary, size: 22),
                       padding: const EdgeInsets.all(6),
                     ),
                     IconButton(
@@ -321,10 +333,36 @@ class _ChatScreenState extends State<ChatScreen> {
 
         if (_showEmojiPicker)
           SizedBox(
-            height: 250,
+            height: 280,
             child: EmojiPicker(
               onEmojiSelected: (_, emoji) { _inputCtrl.text += emoji.emoji; setState(() {}); },
-              config: const Config(height: 250, emojiViewConfig: EmojiViewConfig(backgroundColor: Colors.white)),
+              config: Config(
+                height: 280,
+                checkPlatformCompatibility: true,
+                emojiViewConfig: EmojiViewConfig(
+                  backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                  emojiSizeMax: 30,
+                  verticalSpacing: 0,
+                  horizontalSpacing: 0,
+                  recentsLimit: 28,
+                ),
+                skinToneConfig: const SkinToneConfig(
+                  indicatorColor: Color(0xFF8E8E93),
+                  dialogBackgroundColor: Color(0xFFF2F2F7),
+                ),
+                categoryViewConfig: CategoryViewConfig(
+                  backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
+                  iconColor: const Color(0xFF8E8E93),
+                  iconColorSelected: const Color(0xFF0095F6),
+                  indicatorColor: const Color(0xFF0095F6),
+                  initCategory: Category.RECENT,
+                ),
+                bottomActionBarConfig: const BottomActionBarConfig(enabled: false),
+                searchViewConfig: SearchViewConfig(
+                  backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                  buttonIconColor: const Color(0xFF0095F6),
+                ),
+              ),
             ),
           ),
       ]),
@@ -333,14 +371,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _showMessageOptions(Map<String, dynamic> msg) {
     final isMe = msg['senderId'] == _me?.uid;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final dividerClr = isDark ? const Color(0xFF38383A) : const Color(0xFFDBDBDB);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
-        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        decoration: BoxDecoration(color: sheetBg, borderRadius: const BorderRadius.vertical(top: Radius.circular(16))),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(color: const Color(0xFFDBDBDB), borderRadius: BorderRadius.circular(2)))),
+              decoration: BoxDecoration(color: dividerClr, borderRadius: BorderRadius.circular(2)))),
           // Emoji reactions
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -353,19 +394,19 @@ class _ChatScreenState extends State<ChatScreen> {
               ).toList(),
             ),
           ),
-          const Divider(height: 0, color: Color(0xFFDBDBDB)),
-          _sheetBtn(Icons.reply_outlined, 'Reply', const Color(0xFF262626), () {
+          Divider(height: 0, color: dividerClr),
+          _sheetBtn(Icons.reply_outlined, 'Reply', isDark ? Colors.white : const Color(0xFF262626), () {
             Navigator.pop(context);
             setState(() => _replyingTo = msg);
           }),
-          const Divider(height: 0, color: Color(0xFFDBDBDB), indent: 56),
-          _sheetBtn(Icons.delete_outline, 'Delete for me', const Color(0xFF262626), () {
+          Divider(height: 0, color: dividerClr, indent: 56),
+          _sheetBtn(Icons.delete_outline, 'Delete for me', isDark ? Colors.white : const Color(0xFF262626), () {
             Navigator.pop(context);
             _db.collection('messages/${widget.chatId}/msgs').doc(msg['id'])
                 .update({'deletedFor': FieldValue.arrayUnion([_me!.uid])});
           }),
           if (isMe) ...[
-            const Divider(height: 0, color: Color(0xFFDBDBDB), indent: 56),
+            Divider(height: 0, color: dividerClr, indent: 56),
             _sheetBtn(Icons.delete_sweep_outlined, 'Unsend', const Color(0xFFED4956), () {
               Navigator.pop(context);
               _db.collection('messages/${widget.chatId}/msgs').doc(msg['id'])
@@ -387,14 +428,17 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showChatInfo() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final dividerClr = isDark ? const Color(0xFF38383A) : const Color(0xFFDBDBDB);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
-        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        decoration: BoxDecoration(color: sheetBg, borderRadius: const BorderRadius.vertical(top: Radius.circular(16))),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(color: const Color(0xFFDBDBDB), borderRadius: BorderRadius.circular(2)))),
+              decoration: BoxDecoration(color: dividerClr, borderRadius: BorderRadius.circular(2)))),
           _sheetBtn(Icons.cleaning_services_outlined, 'Clear Chat', const Color(0xFFED4956), () async {
             Navigator.pop(context);
             final q = await _db.collection('messages/${widget.chatId}/msgs').get();
@@ -404,7 +448,7 @@ class _ChatScreenState extends State<ChatScreen> {
             }
             await batch.commit();
           }),
-          const Divider(height: 0, color: Color(0xFFDBDBDB), indent: 56),
+          Divider(height: 0, color: dividerClr, indent: 56),
           _sheetBtn(Icons.delete_outline, 'Delete Chat', const Color(0xFFED4956), () async {
             Navigator.pop(context);
             await _db.collection('chats').doc(widget.chatId).delete();
@@ -417,8 +461,41 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _addReaction(String msgId, String emoji) async {
-    await _db.collection('messages/${widget.chatId}/msgs').doc(msgId).update({
-      'reactions.$emoji': FieldValue.increment(1),
+    if (_me == null) return;
+    final ref = _db.collection('messages/${widget.chatId}/msgs').doc(msgId);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final data = snap.data()!;
+
+      // কে কোন emoji দিয়েছে সেটা track করা হয় userReactions-এ
+      final userReactions = Map<String, dynamic>.from(
+        (data['userReactions'] as Map?) ?? {},
+      );
+
+      final current = userReactions[_me!.uid];
+      if (current == emoji) {
+        // একই emoji আবার tap → remove (toggle off)
+        userReactions.remove(_me!.uid);
+      } else {
+        // নতুন বা ভিন্ন emoji → set/change
+        userReactions[_me!.uid] = emoji;
+      }
+
+      // count পুনরায় compute করো
+      final reactions = <String, int>{};
+      for (final r in userReactions.values) {
+        final e = r as String;
+        reactions[e] = (reactions[e] ?? 0) + 1;
+      }
+
+      tx.update(ref, {
+        'userReactions': userReactions,
+        if (reactions.isEmpty)
+          'reactions': FieldValue.delete()
+        else
+          'reactions': reactions,
+      });
     });
   }
 
@@ -485,19 +562,20 @@ class _MessageBubble extends StatelessWidget {
   final bool isDeleted;
   final bool isLastRead;
   final Map<String, dynamic>? otherUser;
+  final String chatId;
   final VoidCallback onLongPress;
   final VoidCallback onReply;
 
   const _MessageBubble({
-    required this.message, required this.isMe, required this.isDeleted,
-    required this.isLastRead, required this.otherUser,
-    required this.onLongPress, required this.onReply,
+    required this.message,
+    required this.isMe,
+    required this.isDeleted,
+    required this.isLastRead,
+    required this.otherUser,
+    required this.chatId,
+    required this.onLongPress,
+    required this.onReply,
   });
-
-  String _timeStr(Timestamp? ts) {
-    if (ts == null) return '';
-    return DateFormat('h:mm a').format(ts.toDate());
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -505,64 +583,88 @@ class _MessageBubble extends StatelessWidget {
     final replyTo = message['replyTo'] as Map?;
     final reactions = message['reactions'] as Map?;
     final readBy = (message['readBy'] as List?) ?? [];
-    final me = FirebaseAuth.instance.currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final receivedBubble = isDark ? const Color(0xFF262D35) : const Color(0xFFEFEFEF);
+    final receivedText = isDark ? Colors.white : const Color(0xFF262626);
+    final deletedBorder = isDark ? const Color(0xFF38383A) : const Color(0xFFDBDBDB);
+    final reactionBg = isDark ? const Color(0xFF2C2C2E) : Colors.white;
+    final reactionBorder = isDark ? const Color(0xFF38383A) : const Color(0xFFDBDBDB);
 
     return GestureDetector(
       onLongPress: onLongPress,
       child: Padding(
-        padding: EdgeInsets.only(bottom: 2, left: isMe ? 48 : 0, right: isMe ? 0 : 48),
+        padding: EdgeInsets.only(
+            bottom: 2, left: isMe ? 48 : 0, right: isMe ? 0 : 48),
         child: Row(
-          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+          mainAxisAlignment:
+              isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             if (!isMe) ...[
-              AvatarWidget(url: otherUser?['avatarUrl'], name: otherUser?['fullName'] ?? '', size: 28),
+              AvatarWidget(
+                  url: otherUser?['avatarUrl'],
+                  name: otherUser?['fullName'] ?? '',
+                  size: 28),
               const SizedBox(width: 6),
             ],
             Column(
-              crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 Container(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.65),
+                  constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.65),
                   padding: isDeleted
-                      ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
-                      : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      ? const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10)
+                      : const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: isDeleted
                         ? Colors.transparent
-                        : isMe ? const Color(0xFF0095F6) : const Color(0xFFEFEFEF),
+                        : isMe
+                            ? const Color(0xFF0095F6)
+                            : receivedBubble,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(22),
                       topRight: const Radius.circular(22),
                       bottomLeft: Radius.circular(isMe ? 22 : 4),
                       bottomRight: Radius.circular(isMe ? 4 : 22),
                     ),
-                    border: isDeleted ? Border.all(color: const Color(0xFFDBDBDB)) : null,
+                    border:
+                        isDeleted ? Border.all(color: deletedBorder) : null,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Reply preview
+                      // Live reply preview — unsend হলে automatically আপডেট হয়
                       if (replyTo != null)
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          margin: const EdgeInsets.only(bottom: 6),
-                          decoration: BoxDecoration(
-                            color: isMe ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border(left: BorderSide(color: isMe ? Colors.white : const Color(0xFF0095F6), width: 3)),
-                          ),
-                          child: Text(replyTo['content'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 12, color: isMe ? Colors.white.withOpacity(0.8) : const Color(0xFF8E8E8E))),
+                        _LiveReplyPreview(
+                          replyTo: replyTo,
+                          chatId: chatId,
+                          isMe: isMe,
                         ),
                       // Message text
                       isDeleted
                           ? Row(mainAxisSize: MainAxisSize.min, children: [
-                              Icon(Icons.block, size: 14, color: Colors.grey.shade400),
+                              Icon(Icons.block,
+                                  size: 14, color: Colors.grey.shade400),
                               const SizedBox(width: 4),
-                              Text('This message was unsent', style: TextStyle(fontSize: 13, color: Colors.grey.shade400, fontStyle: FontStyle.italic)),
+                              Text(
+                                'This message was unsent',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade400,
+                                    fontStyle: FontStyle.italic),
+                              ),
                             ])
-                          : Text(content, style: TextStyle(fontSize: 15, color: isMe ? Colors.white : const Color(0xFF262626))),
+                          : Text(
+                              content,
+                              style: TextStyle(
+                                  fontSize: 15,
+                                  color:
+                                      isMe ? Colors.white : receivedText),
+                            ),
                     ],
                   ),
                 ),
@@ -570,30 +672,56 @@ class _MessageBubble extends StatelessWidget {
                 if (reactions != null && reactions.isNotEmpty)
                   Container(
                     margin: const EdgeInsets.only(top: 2),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.white, borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFDBDBDB)),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)],
+                      color: reactionBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: reactionBorder),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4)
+                      ],
                     ),
-                    child: Row(mainAxisSize: MainAxisSize.min,
-                      children: reactions.entries.map((e) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Text(e.key, style: const TextStyle(fontSize: 12)),
-                          if ((e.value as num).toInt() > 1) ...[
-                            const SizedBox(width: 2),
-                            Text('${e.value}', style: const TextStyle(fontSize: 10, color: Color(0xFF8E8E8E), fontWeight: FontWeight.w600)),
-                          ],
-                        ]),
-                      )).toList(),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: reactions.entries
+                          .map((e) => Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 2),
+                                child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(e.key,
+                                          style: const TextStyle(
+                                              fontSize: 12)),
+                                      if ((e.value as num).toInt() > 1) ...[
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          '${e.value}',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: isDark
+                                                ? const Color(0xFFAEAEB2)
+                                                : const Color(0xFF8E8E8E),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ]),
+                              ))
+                          .toList(),
                     ),
                   ),
               ],
             ),
             if (isMe) ...[
               const SizedBox(width: 4),
-              _ReadReceipt(readBy: readBy, otherUser: otherUser, isPending: message['isPending'] == true),
+              _ReadReceipt(
+                  readBy: readBy,
+                  otherUser: otherUser,
+                  isPending: message['isPending'] == true),
             ],
           ],
         ),
@@ -602,20 +730,130 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
+// Unsend হওয়া message-এর reply preview live check করে
+class _LiveReplyPreview extends StatelessWidget {
+  final Map replyTo;
+  final String chatId;
+  final bool isMe;
+
+  const _LiveReplyPreview({
+    required this.replyTo,
+    required this.chatId,
+    required this.isMe,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final msgId = replyTo['id'] as String?;
+
+    Widget box({required bool deleted, String content = ''}) {
+      return Container(
+        padding: const EdgeInsets.all(8),
+        margin: const EdgeInsets.only(bottom: 6),
+        decoration: BoxDecoration(
+          color: isMe
+              ? Colors.white.withOpacity(0.2)
+              : Colors.black.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(8),
+          border: Border(
+            left: BorderSide(
+              color:
+                  isMe ? Colors.white : const Color(0xFF0095F6),
+              width: 3,
+            ),
+          ),
+        ),
+        child: deleted
+            ? Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.block,
+                    size: 12,
+                    color: isMe
+                        ? Colors.white.withOpacity(0.55)
+                        : Colors.grey.shade400),
+                const SizedBox(width: 4),
+                Text(
+                  'This message was unsent',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                    color: isMe
+                        ? Colors.white.withOpacity(0.55)
+                        : Colors.grey.shade400,
+                  ),
+                ),
+              ])
+            : Text(
+                content,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isMe
+                      ? Colors.white.withOpacity(0.8)
+                      : const Color(0xFF8E8E8E),
+                ),
+              ),
+      );
+    }
+
+    // id না থাকলে শুধু content দেখাও (backward compat)
+    if (msgId == null) {
+      return box(deleted: false, content: replyTo['content'] as String? ?? '');
+    }
+
+    // Live Firestore stream — original message unsent হলে instantly update
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('messages/$chatId/msgs')
+          .doc(msgId)
+          .snapshots(),
+      builder: (ctx, snap) {
+        if (snap.hasData && snap.data!.exists) {
+          final data = snap.data!.data() as Map<String, dynamic>;
+          final isDeleted = data['deletedForEveryone'] == true ||
+              data['isDeleted'] == true;
+          if (isDeleted) return box(deleted: true);
+          return box(
+              deleted: false,
+              content: data['content'] as String? ?? '');
+        }
+        // লোড হওয়ার আগে stored content দেখাও
+        return box(
+            deleted: false,
+            content: replyTo['content'] as String? ?? '');
+      },
+    );
+  }
+}
+
 class _ReadReceipt extends StatelessWidget {
   final List readBy;
   final Map<String, dynamic>? otherUser;
   final bool isPending;
-  const _ReadReceipt({required this.readBy, required this.otherUser, required this.isPending});
+  const _ReadReceipt(
+      {required this.readBy,
+      required this.otherUser,
+      required this.isPending});
 
   @override
   Widget build(BuildContext context) {
-    if (isPending) return const SizedBox(width: 14, height: 14, child: CircleAvatar(backgroundColor: Color(0xFF8E8E8E)));
-    final isRead = otherUser != null && readBy.contains(otherUser!['id']);
+    if (isPending)
+      return const SizedBox(
+          width: 14,
+          height: 14,
+          child: CircleAvatar(backgroundColor: Color(0xFF8E8E8E)));
+    final isRead =
+        otherUser != null && readBy.contains(otherUser!['id']);
     if (isRead) {
-      return SizedBox(width: 14, height: 14,
-        child: AvatarWidget(url: otherUser!['avatarUrl'], name: otherUser!['fullName'] ?? '', size: 14));
+      return SizedBox(
+          width: 14,
+          height: 14,
+          child: AvatarWidget(
+              url: otherUser!['avatarUrl'],
+              name: otherUser!['fullName'] ?? '',
+              size: 14));
     }
-    return const Icon(Icons.check_circle, size: 14, color: Color(0xFF8E8E8E));
+    return const Icon(Icons.check_circle,
+        size: 14, color: Color(0xFF8E8E8E));
   }
 }

@@ -6,19 +6,28 @@ class AvatarWidget extends StatelessWidget {
   final String name;
   final double size;
 
-  const AvatarWidget({super.key, required this.url, required this.name, this.size = 44});
+  const AvatarWidget(
+      {super.key, required this.url, required this.name, this.size = 44});
 
   @override
   Widget build(BuildContext context) {
-    final hasUrl = url != null && url!.isNotEmpty && url!.startsWith('http');
+    final cleanUrl = url?.trim();
+    final hasUrl = cleanUrl != null &&
+        cleanUrl.isNotEmpty &&
+        (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://'));
+
     return SizedBox(
-      width: size, height: size,
+      width: size,
+      height: size,
       child: ClipOval(
         child: hasUrl
             ? CachedNetworkImage(
-                imageUrl: url!,
-                width: size, height: size,
+                key: ValueKey(cleanUrl), // URL চেঞ্জ হলে force rebuild
+                imageUrl: cleanUrl,
+                width: size,
+                height: size,
                 fit: BoxFit.cover,
+                fadeInDuration: const Duration(milliseconds: 200),
                 placeholder: (_, __) => _placeholder(),
                 errorWidget: (_, __, ___) => _placeholder(),
               )
@@ -30,10 +39,19 @@ class AvatarWidget extends StatelessWidget {
   Widget _placeholder() {
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     return Container(
-      width: size, height: size,
-      color: const Color(0xFFDBDBDB),
-      child: Center(child: Text(initial,
-          style: TextStyle(color: Colors.white, fontSize: size * 0.4, fontWeight: FontWeight.w600))),
+      width: size,
+      height: size,
+      color: const Color(0xFF7B8FF7),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: size * 0.42,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
     );
   }
 }

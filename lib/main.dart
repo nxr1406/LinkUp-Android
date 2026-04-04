@@ -78,15 +78,76 @@ class LinkUpApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.isDark ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(
-        colorScheme: const ColorScheme.light(primary: Color(0xFF5865F2), surface: Colors.white),
+        useMaterial3: false,
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF0095F6),
+          secondary: Color(0xFF0095F6),
+          surface: Colors.white,
+          background: Colors.white,
+          onSurface: Color(0xFF262626),
+          onBackground: Color(0xFF262626),
+        ),
         scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(backgroundColor: Colors.white, elevation: 0, foregroundColor: Color(0xFF262626)),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          foregroundColor: Color(0xFF262626),
+          surfaceTintColor: Colors.transparent,
+        ),
+        dividerColor: const Color(0xFFDBDBDB),
+        cardColor: Colors.white,
       ),
       darkTheme: ThemeData(
+        useMaterial3: false,
         brightness: Brightness.dark,
-        colorScheme: const ColorScheme.dark(primary: Color(0xFF5865F2), surface: Color(0xFF1A1A2E)),
-        scaffoldBackgroundColor: const Color(0xFF0F0F1A),
-        appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF0F0F1A), elevation: 0, foregroundColor: Colors.white),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF0095F6),
+          secondary: Color(0xFF0095F6),
+          surface: Color(0xFF1C1C1E),
+          background: Color(0xFF000000),
+          onSurface: Colors.white,
+          onBackground: Colors.white,
+          onPrimary: Colors.white,
+        ),
+        scaffoldBackgroundColor: const Color(0xFF000000),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1C1C1E),
+          elevation: 0,
+          foregroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
+        cardColor: const Color(0xFF1C1C1E),
+        dividerColor: const Color(0xFF38383A),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          backgroundColor: Color(0xFF1C1C1E),
+          selectedItemColor: Color(0xFF0095F6),
+          unselectedItemColor: Color(0xFF8E8E93),
+        ),
+        inputDecorationTheme: const InputDecorationTheme(
+          hintStyle: TextStyle(color: Color(0xFF8E8E93)),
+          border: InputBorder.none,
+        ),
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white),
+          titleMedium: TextStyle(color: Colors.white),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+        listTileTheme: const ListTileThemeData(
+          iconColor: Colors.white,
+          textColor: Colors.white,
+        ),
+        switchTheme: SwitchThemeData(
+          thumbColor: MaterialStateProperty.resolveWith(
+              (s) => s.contains(MaterialState.selected)
+                  ? const Color(0xFF0095F6)
+                  : const Color(0xFF8E8E93)),
+          trackColor: MaterialStateProperty.resolveWith(
+              (s) => s.contains(MaterialState.selected)
+                  ? const Color(0xFF0095F6).withOpacity(0.4)
+                  : const Color(0xFF38383A)),
+        ),
       ),
       routerConfig: router,
     );
