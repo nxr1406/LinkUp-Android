@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/auth_provider.dart';
+import '../providers/theme_provider.dart';
 import '../widgets/avatar_widget.dart';
 import '../widgets/verified_badge.dart';
 import '../services/catbox_service.dart';
@@ -19,20 +20,9 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  int _chatCount = 0;
-
   @override
   void initState() {
     super.initState();
-    _loadChatCount();
-  }
-
-  Future<void> _loadChatCount() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-    final q = await FirebaseFirestore.instance.collection('chats')
-        .where('participants', arrayContains: uid).get();
-    if (mounted) setState(() => _chatCount = q.size);
   }
 
   @override
@@ -85,11 +75,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // Stats
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: IntrinsicHeight(
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                _StatItem(count: _chatCount, label: 'CHATS'),
-              ]),
-            ),
+            child: Builder(builder: (context) {
+              final auth = context.watch<LinkUpAuthProvider>();
+              final ud = auth.userData;
+              final followers = (ud?['followers'] as List?)?.length ?? 0;
+              final following = (ud?['following'] as List?)?.length ?? 0;
+              return IntrinsicHeight(
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  _StatItem(count: followers, label: 'FOLLOWERS'),
+                  Container(width: 1, height: 32, color: const Color(0xFFDBDBDB), margin: const EdgeInsets.symmetric(horizontal: 24)),
+                  _StatItem(count: following, label: 'FOLLOWING'),
+                ]),
+              );
+            }),
           ),
           const SizedBox(height: 16),
           // Buttons
@@ -186,13 +184,14 @@ class _SettingsSheetState extends State<_SettingsSheet> {
             decoration: BoxDecoration(color: const Color(0xFFDBDBDB), borderRadius: BorderRadius.circular(2)))),
         const Text('Settings', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF262626))),
         const SizedBox(height: 8),
-        _settingItem(Icons.notifications_outlined, 'Notifications', onTap: () { Navigator.pop(context); }),
+        _settingItem(Icons.notifications_outlined, 'Notifications', onTap: () { Navigator.pop(context); context.go('/app/notifications'); }),
         _divider(),
-        _settingItem(Icons.lock_outline, 'Privacy', onTap: () { Navigator.pop(context); }),
+        _settingItem(Icons.lock_outline, 'Privacy', onTap: () { Navigator.pop(context); context.go('/app/privacy'); }),
         _divider(),
         _settingItem(Icons.block, 'Blocked accounts', onTap: () { Navigator.pop(context); context.go('/app/blocked'); }),
         _divider(),
-        _settingItemToggle(Icons.settings_outlined, 'Dark Mode', _darkMode, (val) => setState(() => _darkMode = val)),
+        Consumer<ThemeProvider>(builder: (context, theme, _) => 
+          _settingItemToggle(Icons.settings_outlined, 'Dark Mode', theme.isDark, (val) => theme.toggle())),
         _divider(),
         _settingItem(Icons.key_outlined, 'Change Password', onTap: () { Navigator.pop(context); _showChangePassword(context); }),
         _divider(),

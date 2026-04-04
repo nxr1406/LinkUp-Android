@@ -4,425 +4,174 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
+import '../services/catbox_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
-
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _fullNameCtrl = TextEditingController();
+  static const _purple = Color(0xFF5865F2);
+  final _nameCtrl = TextEditingController();
   final _usernameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
-  final _confirmPasswordCtrl = TextEditingController();
-
-  bool _showPassword = false;
+  final _passCtrl = TextEditingController();
+  File? _avatar;
   bool _loading = false;
-
   String _usernameError = '';
-  bool _isUsernameValid = false;
-  String _emailError = '';
-  bool _isEmailAvailable = false;
+  bool _usernameOk = false;
 
-  File? _avatarFile;
-
-  bool get _isValid =>
-      _fullNameCtrl.text.isNotEmpty &&
-      _isUsernameValid &&
-      _isEmailAvailable &&
-      _passwordCtrl.text.length >= 6 &&
-      _passwordCtrl.text == _confirmPasswordCtrl.text;
+  bool get _isValid => _nameCtrl.text.isNotEmpty && _usernameOk && _emailCtrl.text.contains('@') && _passCtrl.text.length >= 6;
 
   @override
   void initState() {
     super.initState();
     _usernameCtrl.addListener(_checkUsername);
-    _emailCtrl.addListener(_checkEmail);
   }
 
   Future<void> _checkUsername() async {
-    final username = _usernameCtrl.text.trim();
-    if (username.length < 3) {
-      setState(() {
-        _usernameError = '';
-        _isUsernameValid = false;
-      });
-      return;
-    }
-    if (!RegExp(r'^[a-z0-9_]+$').hasMatch(username)) {
-      setState(() {
-        _usernameError = 'Lowercase letters, numbers, underscores only';
-        _isUsernameValid = false;
-      });
-      return;
+    final u = _usernameCtrl.text.trim();
+    if (u.length < 3) { setState(() { _usernameError = ''; _usernameOk = false; }); return; }
+    if (!RegExp(r'^[a-z0-9_]+$').hasMatch(u)) {
+      setState(() { _usernameError = 'Only lowercase, numbers, underscores'; _usernameOk = false; }); return;
     }
     try {
-      final q = await FirebaseFirestore.instance
-          .collection('users')
-          .where('username', isEqualTo: username)
-          .get();
-      setState(() {
-        if (q.docs.isNotEmpty) {
-          _usernameError = 'Username taken';
-          _isUsernameValid = false;
-        } else {
-          _usernameError = '';
-          _isUsernameValid = true;
-        }
-      });
-    } catch (_) {
-      setState(() {
-        _usernameError = '';
-        _isUsernameValid = true;
-      });
-    }
-  }
-
-  Future<void> _checkEmail() async {
-    final email = _emailCtrl.text.trim();
-    final isValidFormat =
-        RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email);
-    if (!isValidFormat) {
-      setState(() {
-        _emailError = '';
-        _isEmailAvailable = false;
-      });
-      return;
-    }
-    try {
-      final q = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: email)
-          .get();
-      setState(() {
-        if (q.docs.isNotEmpty) {
-          _emailError = 'Email already registered';
-          _isEmailAvailable = false;
-        } else {
-          _emailError = '';
-          _isEmailAvailable = true;
-        }
-      });
-    } catch (_) {
-      setState(() {
-        _emailError = '';
-        _isEmailAvailable = true;
-      });
-    }
+      final q = await FirebaseFirestore.instance.collection('users').where('username', isEqualTo: u).get();
+      setState(() { _usernameError = q.docs.isNotEmpty ? 'Username taken' : ''; _usernameOk = q.docs.isEmpty; });
+    } catch (_) { setState(() { _usernameError = ''; _usernameOk = true; }); }
   }
 
   Future<void> _pickAvatar() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() => _avatarFile = File(picked.path));
-    }
+    final p = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (p != null) setState(() => _avatar = File(p.path));
   }
 
-  Future<String?> _uploadToCatbox(File file) async {
-    try {
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('https://catbox.moe/user/api.php'),
-      );
-      request.fields['reqtype'] = 'fileupload';
-      request.files.add(await http.MultipartFile.fromPath('fileToUpload', file.path));
-      final response = await request.send();
-      if (response.statusCode == 200) {
-        return await response.stream.bytesToString();
-      }
-    } catch (_) {}
-    return null;
-  }
-
-  Future<void> _handleRegister() async {
+  Future<void> _register() async {
     if (!_isValid || _loading) return;
     setState(() => _loading = true);
-
     try {
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailCtrl.text.trim(),
-        password: _passwordCtrl.text,
-      );
-
+      final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailCtrl.text.trim(), password: _passCtrl.text);
       String avatarUrl = '';
-      if (_avatarFile != null) {
-        avatarUrl = await _uploadToCatbox(_avatarFile!) ?? '';
-      }
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(credential.user!.uid)
-          .set({
-        'fullName': _fullNameCtrl.text.trim(),
+      if (_avatar != null) avatarUrl = await CatboxService.uploadFile(_avatar!) ?? '';
+      await FirebaseFirestore.instance.collection('users').doc(cred.user!.uid).set({
+        'fullName': _nameCtrl.text.trim(),
         'username': _usernameCtrl.text.trim(),
         'email': _emailCtrl.text.trim(),
         'avatarUrl': avatarUrl,
-        'bio': '',
-        'isOnline': true,
+        'bio': '', 'isOnline': true,
         'lastSeen': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
-        'isVerified': false,
-        'verificationStatus': 'none',
-        'role': 'user',
+        'isVerified': false, 'verificationStatus': 'none',
+        'role': 'user', 'followers': [], 'following': [],
       });
-
       if (mounted) context.go('/app');
     } on FirebaseAuthException catch (e) {
-      _showSnack(e.message ?? 'Registration failed');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  void _showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Registration failed'), backgroundColor: Colors.red));
+    } finally { if (mounted) setState(() => _loading = false); }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: const Color(0xFFF8F9FF),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: const Color(0xFFDBDBDB)),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'LinkUp',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF262626),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(children: [
+            const SizedBox(height: 32),
+            const Text('Create an account', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Color(0xFF1A1A2E))),
+            const SizedBox(height: 6),
+            const Text('Join LinkUp today', style: TextStyle(fontSize: 14, color: Colors.grey)),
+            const SizedBox(height: 28),
 
-                      // Avatar picker
-                      GestureDetector(
-                        onTap: _pickAvatar,
-                        child: Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundColor: const Color(0xFFDBDBDB),
-                              backgroundImage: _avatarFile != null
-                                  ? FileImage(_avatarFile!)
-                                  : null,
-                              child: _avatarFile == null
-                                  ? const Icon(Icons.person,
-                                      size: 40, color: Colors.white)
-                                  : null,
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                width: 24,
-                                height: 24,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF0095F6),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.add,
-                                    size: 16, color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      _buildField(_fullNameCtrl, 'Full Name'),
-                      const SizedBox(height: 8),
-                      _buildFieldWithStatus(
-                        _usernameCtrl,
-                        'Username',
-                        error: _usernameError,
-                        isValid: _isUsernameValid,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildFieldWithStatus(
-                        _emailCtrl,
-                        'Email',
-                        keyboardType: TextInputType.emailAddress,
-                        error: _emailError,
-                        isValid: _isEmailAvailable,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildField(_passwordCtrl, 'Password',
-                          obscure: !_showPassword),
-                      const SizedBox(height: 8),
-                      _buildField(
-                          _confirmPasswordCtrl, 'Confirm Password',
-                          obscure: true),
-                      const SizedBox(height: 16),
-
-                      SizedBox(
-                        width: double.infinity,
-                        height: 40,
-                        child: ElevatedButton(
-                          onPressed:
-                              _isValid && !_loading ? _handleRegister : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0095F6),
-                            disabledBackgroundColor:
-                                const Color(0xFF0095F6).withOpacity(0.5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: _loading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                      color: Colors.white, strokeWidth: 2),
-                                )
-                              : const Text(
-                                  'Sign up',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
+            // Card
+            Container(
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20)]),
+              padding: const EdgeInsets.all(20),
+              child: Column(children: [
+                // Avatar picker
+                GestureDetector(
+                  onTap: _pickAvatar,
+                  child: Stack(children: [
+                    _avatar != null
+                        ? CircleAvatar(radius: 44, backgroundImage: FileImage(_avatar!))
+                        : Container(width: 88, height: 88,
+                            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFFE0E0F0), width: 2, style: BorderStyle.solid)),
+                            child: const Icon(Icons.person_outline, size: 44, color: Color(0xFFB0B0D0))),
+                    Positioned(bottom: 0, right: 0,
+                      child: Container(width: 28, height: 28,
+                        decoration: const BoxDecoration(color: _purple, shape: BoxShape.circle),
+                        child: const Icon(Icons.camera_alt, size: 16, color: Colors.white))),
+                  ]),
                 ),
+                const SizedBox(height: 20),
+
+                // Fields
+                _field(_nameCtrl, 'Full Name', Icons.person_outline),
                 const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: const Color(0xFFDBDBDB)),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('Have an account? ',
-                          style: TextStyle(fontSize: 14)),
-                      GestureDetector(
-                        onTap: () => context.go('/login'),
-                        child: const Text(
-                          'Log in',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF0095F6),
-                          ),
-                        ),
-                      ),
-                    ],
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  _field(_usernameCtrl, 'Username', Icons.alternate_email),
+                  if (_usernameError.isNotEmpty)
+                    Padding(padding: const EdgeInsets.only(top: 4, left: 4),
+                      child: Text(_usernameError, style: const TextStyle(fontSize: 11, color: Colors.red))),
+                ]),
+                const SizedBox(height: 12),
+                _field(_emailCtrl, 'Email address', Icons.email_outlined, type: TextInputType.emailAddress),
+                const SizedBox(height: 12),
+                _field(_passCtrl, 'Password', Icons.lock_outline, obscure: true),
+                const SizedBox(height: 20),
+
+                SizedBox(width: double.infinity, height: 52,
+                  child: ElevatedButton(
+                    onPressed: _isValid && !_loading ? _register : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _purple,
+                      disabledBackgroundColor: _purple.withOpacity(0.4),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                      elevation: 0,
+                    ),
+                    child: _loading
+                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text('Create Account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
                   ),
                 ),
-              ],
+              ]),
             ),
-          ),
+
+            const SizedBox(height: 20),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Text('Already have an account? ', style: TextStyle(fontSize: 14, color: Colors.grey)),
+              GestureDetector(onTap: () => context.go('/login'),
+                child: const Text('Sign in', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _purple))),
+            ]),
+            const SizedBox(height: 24),
+          ]),
         ),
       ),
     );
   }
 
-  Widget _buildField(
-    TextEditingController ctrl,
-    String hint, {
-    bool obscure = false,
-    TextInputType? keyboardType,
-  }) {
+  Widget _field(TextEditingController ctrl, String hint, IconData icon, {bool obscure = false, TextInputType? type}) {
     return TextField(
-      controller: ctrl,
-      obscureText: obscure,
-      keyboardType: keyboardType,
+      controller: ctrl, obscureText: obscure, keyboardType: type,
       onChanged: (_) => setState(() {}),
-      style: const TextStyle(fontSize: 12),
-      decoration: _inputDecoration(hint),
-    );
-  }
-
-  Widget _buildFieldWithStatus(
-    TextEditingController ctrl,
-    String hint, {
-    String error = '',
-    bool isValid = false,
-    TextInputType? keyboardType,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextField(
-          controller: ctrl,
-          keyboardType: keyboardType,
-          style: const TextStyle(fontSize: 12),
-          decoration: _inputDecoration(hint).copyWith(
-            suffixIcon: ctrl.text.length >= 3
-                ? Icon(
-                    isValid ? Icons.check_circle : Icons.cancel,
-                    color: isValid ? Colors.green : Colors.red,
-                    size: 18,
-                  )
-                : null,
-          ),
-        ),
-        if (error.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 4, left: 4),
-            child: Text(error,
-                style: const TextStyle(fontSize: 11, color: Colors.red)),
-          ),
-      ],
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF8E8E8E)),
-      filled: true,
-      fillColor: const Color(0xFFFAFAFA),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(3),
-        borderSide: const BorderSide(color: Color(0xFFDBDBDB)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(3),
-        borderSide: const BorderSide(color: Color(0xFFDBDBDB)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(3),
-        borderSide: const BorderSide(color: Color(0xFFA8A8A8)),
+      style: const TextStyle(fontSize: 15, color: Color(0xFF1A1A2E)),
+      decoration: InputDecoration(
+        hintText: hint, hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+        prefixIcon: Icon(icon, color: Colors.grey, size: 20),
+        filled: true, fillColor: const Color(0xFFF5F6FF),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE8E8FF))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE8E8FF))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: _purple, width: 1.5)),
       ),
     );
   }
 
   @override
-  void dispose() {
-    _fullNameCtrl.dispose();
-    _usernameCtrl.dispose();
-    _emailCtrl.dispose();
-    _passwordCtrl.dispose();
-    _confirmPasswordCtrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _nameCtrl.dispose(); _usernameCtrl.dispose(); _emailCtrl.dispose(); _passCtrl.dispose(); super.dispose(); }
 }

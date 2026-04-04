@@ -581,7 +581,7 @@ class _MessageBubble extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 2),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           Text(e.key, style: const TextStyle(fontSize: 12)),
-                          if ((e.value as int) > 1) ...[
+                          if ((e.value as num).toInt() > 1) ...[
                             const SizedBox(width: 2),
                             Text('${e.value}', style: const TextStyle(fontSize: 10, color: Color(0xFF8E8E8E), fontWeight: FontWeight.w600)),
                           ],
