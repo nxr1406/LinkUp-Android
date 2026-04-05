@@ -1,72 +1,20 @@
-name: linkup
-description: LinkUp - Connect with people around you.
+name: music_player
+description: A music player app inspired by Apple Music UI.
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-
-  # WebView
-  webview_flutter: ^4.10.0
-
-  # Connectivity check
-  connectivity_plus: ^6.1.1
-
-  # App icon & splash
-  flutter_native_splash: ^2.4.3
-
-  # Permission handling
-  permission_handler: ^11.3.1
-
-  # File download support
-  flutter_downloader: ^1.11.8
-
-  # Path utilities
-  path_provider: ^2.1.5
-
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^1.0.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
-  flutter_launcher_icons: ^0.14.3
-
-# ─── App Icons ────────────────────────────────────────────────────────────────
-flutter_launcher_icons:
-  android: true
-  ios: false
-  image_path: "assets/icon/icon.png"
-  min_sdk_android: 21
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
-
-# ─── Splash Screen ────────────────────────────────────────────────────────────
-flutter_native_splash:
-  color: "#FFFFFF"
-  image: assets/splash/splash_logo.png
-  color_dark: "#000000"
-  image_dark: assets/splash/splash_logo_dark.png
-  android_12:
-    image: assets/splash/splash_logo.png
-    color: "#FFFFFF"
-    image_dark: assets/splash/splash_logo_dark.png
-    color_dark: "#000000"
-  fullscreen: true
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
-
-  assets:
-    # ── Static web build output ──────────────────────────────────────────────
-    # After running `vite build`, copy the entire `dist/` folder here.
-    # The glob below loads every file recursively under assets/www/.
-    - assets/www/
-
-    # ── App icons & splash ───────────────────────────────────────────────────
-    - assets/icon/
-    - assets/splash/
