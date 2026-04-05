@@ -34,12 +34,10 @@ jobs:
 
       - name: Create key.properties
         run: |
-          cat > android/key.properties <<EOF
-          storePassword=${{ secrets.STORE_PASSWORD }}
-          keyPassword=${{ secrets.KEY_PASSWORD }}
-          keyAlias=${{ secrets.KEY_ALIAS }}
-          storeFile=keystore.jks
-          EOF
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=$(pwd)/android/app/keystore.jks" >> android/key.properties
 
       - name: Build Split APKs
         run: |
