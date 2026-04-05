@@ -1,164 +1,297 @@
-# LinkUp Flutter — সম্পূর্ণ সেটআপ গাইড
+# LinkUp Flutter WebView App
 
-## এই অ্যাপে যা যা আছে
-
-- ✅ Login / Register (email + username দিয়ে)
-- ✅ Real-time Chat (reply, delete, emoji)
-- ✅ Chat List (unread badge, online indicator)
-- ✅ User Search
-- ✅ Profile Edit (ছবি Catbox-এ আপলোড)
-- ✅ Verified Badge
-- ✅ Suspended Account + Appeal System
-- ✅ Blocked Users
-- ✅ Admin Panel (verification + appeals)
-- ✅ Firebase Firestore rules
+Convert your Vite + React PWA into a Flutter Android app.
 
 ---
 
-## ধাপ ১ — প্রয়োজনীয় সফটওয়্যার
+## What this does
 
-```bash
-# Flutter SDK ইন্সটল করুন
-https://docs.flutter.dev/get-started/install
+Your app is bundled as **static files** (HTML / CSS / JS) inside the Flutter
+APK. The Flutter shell loads them via `loadFlutterAsset()` — no server needed.
+Firebase and the Gemini API still connect over the internet as usual; only the
+*app shell* is served offline.
 
-# Android Studio ইন্সটল করুন
-https://developer.android.com/studio
-
-# FlutterFire CLI ইন্সটল করুন
-dart pub global activate flutterfire_cli
+```
+Android APK
+└── assets/
+    └── www/               ← Vite `dist/` output lives here
+        ├── index.html
+        ├── assets/
+        │   ├── js/
+        │   ├── css/
+        │   └── img/
+        └── ...
 ```
 
 ---
 
-## ধাপ ২ — Firebase প্রজেক্ট তৈরি
+## Prerequisites
 
-1. https://console.firebase.google.com এ যান
-2. **"Add project"** ক্লিক করুন → প্রজেক্টের নাম দিন
-3. **Authentication** চালু করুন:
-   - Authentication → Sign-in method → Email/Password → Enable
-4. **Firestore Database** চালু করুন:
-   - Firestore Database → Create database → Start in test mode
-5. **Storage** চালু করুন (optional, আমরা Catbox ব্যবহার করছি)
+| Tool | Minimum version | Install |
+|------|----------------|---------|
+| Flutter SDK | 3.19 | https://docs.flutter.dev/get-started/install |
+| Android Studio | Hedgehog+ | https://developer.android.com/studio |
+| Node.js | 18 LTS | https://nodejs.org |
+| Java (JDK) | 17 | bundled with Android Studio |
+
+Verify your Flutter setup:
+```bash
+flutter doctor
+```
+All items should be green before proceeding.
 
 ---
 
-## ধাপ ৩ — Firebase কানেক্ট করুন
+## Step 1 — Build the Vite / React app
 
-প্রজেক্ট ফোল্ডারে Terminal খুলুন:
+### 1a. Copy the updated vite.config.ts
 
+Replace your existing `vite.config.ts` with the one in this package.
+The key change is `base: './'` — mandatory for `file://` / asset loading.
+
+### 1b. Install dependencies
+```bash
+cd LinkUp-Dev-Ac2-main
+npm install
+```
+
+### 1c. Set up your .env file
+```bash
+cp .env.example .env
+# Edit .env and add your GEMINI_API_KEY
+```
+
+### 1d. Build
+```bash
+npm run build
+# Output: dist/
+```
+
+### 1e. Copy dist/ into Flutter assets
+```bash
+rm -rf linkup_flutter/assets/www
+cp -r dist/ linkup_flutter/assets/www/
+```
+
+---
+
+## Step 2 — Set up the Flutter project
+
+### 2a. Get packages
 ```bash
 cd linkup_flutter
-
-# Firebase লগইন করুন
-firebase login
-
-# FlutterFire configure চালান
-flutterfire configure
-```
-
-এই কমান্ড চালালে `lib/firebase_options.dart` ফাইলটি **অটোমেটিক** আপডেট হবে।
-(আগে থেকে থাকা placeholder ফাইলটি replace হয়ে যাবে)
-
----
-
-## ধাপ ৪ — Firestore Rules আপলোড করুন
-
-```bash
-# Firebase CLI ইন্সটল থাকলে:
-firebase deploy --only firestore:rules
-
-# অথবা Firebase Console-এ গিয়ে firestore.rules ফাইলের কনটেন্ট paste করুন
-# Firestore → Rules → Edit → Publish
-```
-
----
-
-## ধাপ ৫ — Dependencies ইন্সটল করুন
-
-```bash
 flutter pub get
 ```
 
+### 2b. Add your app icons
+
+Place a 1024×1024 PNG at:
+- `assets/icon/icon.png`
+- `assets/icon/icon_foreground.png`  (transparent, for adaptive icon)
+
+Then generate:
+```bash
+flutter pub run flutter_launcher_icons
+```
+
+### 2c. Add your splash logo
+
+Place your logo PNG at:
+- `assets/splash/splash_logo.png`
+- `assets/splash/splash_logo_dark.png`
+
+Also copy it to:
+```
+android/app/src/main/res/drawable/splash_logo.png
+```
+
+Then generate the native splash:
+```bash
+dart run flutter_native_splash:create
+```
+
 ---
 
-## ধাপ ৬ — অ্যাপ রান করুন
+## Step 3 — Configure android/app/build.gradle
+
+Open `android/app/build.gradle` and update:
+
+```groovy
+android {
+    namespace "com.linkup.app"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.linkup.app"
+        minSdk 21
+        targetSdk 35
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release  // see keystore section
+            minifyEnabled true
+            shrinkResources true
+        }
+    }
+}
+```
+
+---
+
+## Step 4 — Build the APK
+
+### Debug APK (for testing)
+```bash
+flutter build apk --debug
+# Output: build/app/outputs/flutter-apk/app-debug.apk
+```
+
+Install on a connected device:
+```bash
+adb install build/app/outputs/flutter-apk/app-debug.apk
+```
+
+### Release APK (for Play Store / sideload)
+
+#### 4a. Create a keystore (one-time setup)
+```bash
+keytool -genkey -v \
+  -keystore android/linkup-release.jks \
+  -alias linkup \
+  -keyalg RSA \
+  -keysize 2048 \
+  -validity 10000
+```
+
+#### 4b. Create android/key.properties
+```properties
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=linkup
+storeFile=../linkup-release.jks
+```
+
+#### 4c. Reference it in android/app/build.gradle
+```groovy
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+        }
+    }
+}
+```
+
+#### 4d. Build split APKs (smaller downloads)
+```bash
+flutter build apk --release --split-per-abi
+# Outputs:
+#   app-armeabi-v7a-release.apk   (~32-bit devices)
+#   app-arm64-v8a-release.apk     (~most modern phones)
+#   app-x86_64-release.apk        (~emulators)
+```
+
+---
+
+## One-command build (after setup)
 
 ```bash
-# Android emulator বা real device কানেক্ট করুন, তারপর:
-flutter run
-
-# শুধু Android-এর জন্য APK বানাতে:
-flutter build apk --release
-# APK পাবেন: build/app/outputs/flutter-apk/app-release.apk
+chmod +x build_and_deploy.sh
+./build_and_deploy.sh           # debug
+./build_and_deploy.sh --release # release
 ```
 
 ---
 
-## প্রজেক্ট স্ট্রাকচার
+## Project structure
 
 ```
-lib/
-├── main.dart                    # Entry point + Router
-├── firebase_options.dart        # Firebase config (auto-generated)
-├── providers/
-│   └── auth_provider.dart       # Auth state management
-├── screens/
-│   ├── login_screen.dart        # Login page
-│   ├── register_screen.dart     # Registration page
-│   ├── main_layout.dart         # Bottom nav shell
-│   ├── home_screen.dart         # Chat list
-│   ├── chat_screen.dart         # Messaging screen
-│   ├── search_screen.dart       # User search
-│   ├── profile_screen.dart      # My profile
-│   ├── user_profile_screen.dart # Other user's profile
-│   ├── notifications_screen.dart
-│   ├── blocked_users_screen.dart
-│   ├── suspended_screen.dart    # Suspended account
-│   ├── privacy_screen.dart
-│   ├── admin_verification_screen.dart
-│   └── admin_appeals_screen.dart
-├── widgets/
-│   ├── avatar_widget.dart       # Profile picture widget
-│   ├── verified_badge.dart      # Blue tick
-│   └── loading_widget.dart      # Loaders + toast helper
-└── services/
-    └── catbox_service.dart      # Image upload service
+linkup_flutter/
+├── lib/
+│   ├── main.dart              ← App entry, theme, orientation lock
+│   └── webview_screen.dart    ← WebView, offline handling, downloads
+├── android/
+│   └── app/src/main/
+│       ├── AndroidManifest.xml
+│       ├── kotlin/com/linkup/app/
+│       │   └── MainActivity.kt
+│       └── res/
+│           ├── drawable/launch_background.xml
+│           ├── values/styles.xml
+│           └── xml/provider_paths.xml
+├── assets/
+│   ├── www/                   ← ← ← Paste your dist/ here
+│   ├── icon/
+│   └── splash/
+├── pubspec.yaml
+├── vite.config.ts             ← Updated config for static export
+└── build_and_deploy.sh        ← Automation script
 ```
 
 ---
 
-## সাধারণ সমস্যা ও সমাধান
+## Features implemented
 
-### `google-services.json` না পেলে
-- Firebase Console → Project Settings → Your apps → Android → Download google-services.json
-- ফাইলটি `android/app/` ফোল্ডারে রাখুন
-
-### Build error: minSdkVersion
-`android/app/build.gradle`-এ এই লাইন আছে কিনা দেখুন:
-```gradle
-minSdkVersion 21
-```
-
-### Image pick কাজ না করলে
-`android/app/src/main/AndroidManifest.xml`-এ permission আছে কিনা চেক করুন।
-
-### iOS-এ চালাতে হলে
-`ios/Runner/Info.plist`-এ যোগ করুন:
-```xml
-<key>NSCameraUsageDescription</key>
-<string>Camera access for profile picture</string>
-<key>NSPhotoLibraryUsageDescription</key>
-<string>Photo library access for profile picture</string>
-```
+| Feature | Implementation |
+|---------|---------------|
+| Offline app shell | Static assets bundled in APK via `loadFlutterAsset()` |
+| Firebase / API calls | Work over the internet as normal |
+| Back navigation | `PopScope` + WebView history stack |
+| Exit confirmation | Dialog shown when at root of history |
+| Offline banner | `connectivity_plus` stream listener |
+| Error overlay | Main-frame errors with retry button |
+| Loading indicator | `LinearProgressIndicator` driven by `onProgress` |
+| File upload | Camera + storage permissions + WebView file picker |
+| File download | `flutter_downloader` triggered via JS channel |
+| Edge-to-edge | `SystemUiMode.edgeToEdge` |
+| Splash screen | `flutter_native_splash` |
+| App icon | `flutter_launcher_icons` |
+| Portrait lock | `SystemChrome.setPreferredOrientations` |
 
 ---
 
-## Admin ব্যবহারকারী তৈরি
+## Troubleshooting
 
-Firebase Console → Firestore → `users` collection-এ আপনার user document খুলুন → `role` field-এর value `"admin"` করুন।
+**"MissingPluginException" on first run**
+→ Run `flutter pub get` then `flutter clean && flutter run`.
+
+**White screen after splash**
+→ Check that `assets/www/index.html` exists. Run `flutter pub get` after
+  adding files to pubspec.yaml.
+
+**Firebase auth fails**
+→ The app uses your hardcoded Firebase config in `src/firebase.ts`.
+  Make sure your Firebase project allows the `file://` origin, or use
+  `signInWithRedirect` instead of `signInWithPopup`.
+
+**File picker doesn't open**
+→ Ensure camera and storage permissions are granted in device settings.
+
+**App crashes on Android 12+**
+→ Make sure `android:exported="true"` is set on MainActivity (already done).
 
 ---
 
-## Firebase Indexes
+## Updating the web app
 
-Chat list ঠিকমতো কাজ করতে Firestore-এ Composite Index লাগতে পারে। Console-এ এরর দিলে দেওয়া link-এ ক্লিক করে index তৈরি করুন।
+1. Make changes in `LinkUp-Dev-Ac2-main/src/`
+2. Run `npm run build`
+3. Copy `dist/` → `assets/www/`
+4. Run `flutter build apk`

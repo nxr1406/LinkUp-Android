@@ -1,64 +1,72 @@
 name: linkup
-description: LinkUp - A modern messaging app
+description: LinkUp - Connect with people around you.
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.5.0 <4.0.0'
-  flutter: '>=3.19.3'
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
 
-  # Firebase
-  firebase_core: ^2.27.0
-  firebase_auth: ^4.17.4
-  cloud_firestore: ^4.15.5
-  firebase_storage: ^11.6.9
-  firebase_messaging: ^14.7.0
-  dart_jsonwebtoken: ^2.8.0
+  # WebView
+  webview_flutter: ^4.10.0
 
-  # State Management
-  provider: ^6.1.2
+  # Connectivity check
+  connectivity_plus: ^6.1.1
 
-  # Navigation
-  go_router: ^13.2.0
+  # App icon & splash
+  flutter_native_splash: ^2.4.3
 
-  # UI
-  cached_network_image: ^3.3.1
-  image_picker: ^1.0.7
-  timeago: ^3.6.1
-  emoji_picker_flutter: ^2.1.1
+  # Permission handling
+  permission_handler: ^11.3.1
 
-  # Utils
-  intl: ^0.19.0
-  http: ^1.2.1
-  shared_preferences: ^2.2.3
-  flutter_local_notifications: ^17.1.2
-  uuid: ^4.3.3
+  # File download support
+  flutter_downloader: ^1.11.8
+
+  # Path utilities
+  path_provider: ^2.1.5
+
+  cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
-  flutter_launcher_icons: ^0.13.1
-  flutter_native_splash: ^2.3.2
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.3
+
+# ─── App Icons ────────────────────────────────────────────────────────────────
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+
+# ─── Splash Screen ────────────────────────────────────────────────────────────
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/splash/splash_logo.png
+  color_dark: "#000000"
+  image_dark: assets/splash/splash_logo_dark.png
+  android_12:
+    image: assets/splash/splash_logo.png
+    color: "#FFFFFF"
+    image_dark: assets/splash/splash_logo_dark.png
+    color_dark: "#000000"
+  fullscreen: true
 
 flutter:
   uses-material-design: true
 
   assets:
-    - assets/splash.png
-    - assets/ic_launcher.png
+    # ── Static web build output ──────────────────────────────────────────────
+    # After running `vite build`, copy the entire `dist/` folder here.
+    # The glob below loads every file recursively under assets/www/.
+    - assets/www/
 
-flutter_icons:
-  android: true
-  ios: false
-  image_path: "assets/ic_launcher.png"
-
-flutter_native_splash:
-  color: "#ffffff"
-  image: assets/splash.png
-  android: true
-  ios: false
+    # ── App icons & splash ───────────────────────────────────────────────────
+    - assets/icon/
+    - assets/splash/
