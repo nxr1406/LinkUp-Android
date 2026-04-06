@@ -28,10 +28,18 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Setup Keystore
+      - name: Decode Keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/keystore.jks
-          printf "storePassword=${{ secrets.STORE_PASSWORD }}\nkeyPassword=${{ secrets.KEY_PASSWORD }}\nkeyAlias=${{ secrets.KEY_ALIAS }}\nstoreFile=${{ github.workspace }}/keystore.jks\n" > android/key.properties
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
+
+      - name: Write key.properties
+        run: |
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=${{ github.workspace }}/keystore.jks" >> android/key.properties
+          echo "--- key.properties content (masked) ---"
+          cat android/key.properties | sed 's/=.*/=***/'
 
       - name: Build Split APKs
         run: |
