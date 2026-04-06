@@ -1,5 +1,5 @@
 name: music_player
-description: A music player app inspired by Apple Music UI.
+description: A music player app that plays audio from device storage.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -10,6 +10,11 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
+  just_audio: ^0.9.36
+  just_audio_background: ^0.0.1-beta.11
+  on_audio_query: ^2.9.0
+  permission_handler: ^11.3.0
+  audio_session: ^0.1.18
 
 dev_dependencies:
   flutter_test:

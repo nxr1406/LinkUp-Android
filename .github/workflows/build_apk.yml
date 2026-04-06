@@ -32,19 +32,14 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
 
-      - name: DEBUG - Show actual alias in keystore
-        run: |
-          keytool -list -v \
-            -keystore keystore.jks \
-            -storepass "${{ secrets.STORE_PASSWORD }}" \
-            -noprompt 2>&1 | grep -E "Alias name|Entry type|error" || true
-
       - name: Write key.properties
         run: |
           echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=${{ github.workspace }}/keystore.jks" >> android/key.properties
+          echo "--- key.properties content (masked) ---"
+          cat android/key.properties | sed 's/=.*/=***/'
 
       - name: Build Split APKs
         run: |

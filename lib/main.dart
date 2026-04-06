@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'screens/queue_screen.dart';
+import 'package:just_audio_background/just_audio_background.dart';
+import 'screens/home_screen.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.example.music_player.channel.audio',
+    androidNotificationChannelName: 'Music Player',
+    androidNotificationOngoing: true,
+    androidStopForegroundOnPause: true,
+  );
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
     ),
   );
+
   runApp(const MusicPlayerApp());
 }
 
@@ -23,11 +33,11 @@ class MusicPlayerApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'SF Pro Display',
-        scaffoldBackgroundColor: const Color(0xFFF0F4F8),
+        scaffoldBackgroundColor: const Color(0xFFF8F5F0),
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFF6B35)),
         useMaterial3: true,
       ),
-      home: const QueueScreen(),
+      home: const HomeScreen(),
     );
   }
 }

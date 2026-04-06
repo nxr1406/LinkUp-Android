@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:on_audio_query/on_audio_query.dart';
 import 'dart:math' as math;
-import 'album_screen.dart';
+import '../services/audio_player_service.dart';
 
 class NowPlayingScreen extends StatefulWidget {
-  const NowPlayingScreen({super.key});
+  final AudioPlayerService playerService;
+  final OnAudioQuery audioQuery;
+
+  const NowPlayingScreen({
+    super.key,
+    required this.playerService,
+    required this.audioQuery,
+  });
 
   @override
   State<NowPlayingScreen> createState() => _NowPlayingScreenState();
@@ -11,38 +20,150 @@ class NowPlayingScreen extends StatefulWidget {
 
 class _NowPlayingScreenState extends State<NowPlayingScreen>
     with TickerProviderStateMixin {
-  bool isPlaying = true;
-  double sliderValue = 0.39 / 2.46;
-  late AnimationController _waveController;
-  late AnimationController _albumController;
+  late AnimationController _rotateController;
 
   @override
   void initState() {
     super.initState();
-    _waveController = AnimationController(
+    _rotateController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
-    )..repeat(reverse: true);
+      duration: const Duration(seconds: 18),
+    );
+    if (widget.playerService.isPlaying) _rotateController.repeat();
+    widget.playerService.addListener(_onPlayerUpdate);
+  }
 
-    _albumController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 30),
-    )..repeat();
+  void _onPlayerUpdate() {
+    if (widget.playerService.isPlaying) {
+      if (!_rotateController.isAnimating) _rotateController.repeat();
+    } else {
+      _rotateController.stop();
+    }
   }
 
   @override
   void dispose() {
-    _waveController.dispose();
-    _albumController.dispose();
+    widget.playerService.removeListener(_onPlayerUpdate);
+    _rotateController.dispose();
     super.dispose();
   }
 
-  String _formatTime(double progress) {
-    final totalSeconds = (2 * 60 + 46);
-    final currentSeconds = (totalSeconds * progress).round();
-    final mins = currentSeconds ~/ 60;
-    final secs = currentSeconds % 60;
-    return '$mins:${secs.toString().padLeft(2, '0')}';
+  String _fmt(Duration d) {
+    final m = d.inMinutes;
+    final s = d.inSeconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
+
+  void _showSleepTimerSheet() {
+    final options = [
+      {'label': '5 minutes', 'duration': const Duration(minutes: 5)},
+      {'label': '10 minutes', 'duration': const Duration(minutes: 10)},
+      {'label': '15 minutes', 'duration': const Duration(minutes: 15)},
+      {'label': '30 minutes', 'duration': const Duration(minutes: 30)},
+      {'label': '45 minutes', 'duration': const Duration(minutes: 45)},
+      {'label': '1 hour', 'duration': const Duration(hours: 1)},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ListenableBuilder(
+        listenable: widget.playerService,
+        builder: (context, __) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  const Icon(Icons.bedtime_outlined, color: Color(0xFF1A1A1A), size: 22),
+                  const SizedBox(width: 10),
+                  const Text('Sleep Timer',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A))),
+                  const Spacer(),
+                  if (widget.playerService.sleepTimerActive) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF6B35).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        widget.playerService.sleepTimerDisplay,
+                        style: const TextStyle(
+                          color: Color(0xFFFF6B35),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        widget.playerService.cancelSleepTimer();
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text('Cancel',
+                          style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600, fontSize: 13)),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 16),
+              ...options.map((opt) {
+                final dur = opt['duration'] as Duration;
+                final label = opt['label'] as String;
+                return GestureDetector(
+                  onTap: () {
+                    widget.playerService.setSleepTimer(dur);
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Sleep timer set for $label'),
+                        backgroundColor: const Color(0xFF1A1A1A),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F5F0),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(label,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A))),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -50,414 +171,334 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF8F5F0),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Top bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new,
-                      size: 20,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                  const Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          'NOW PLAYING',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.5,
-                            color: Color(0xFF1A1A1A),
-                          ),
+        child: ListenableBuilder(
+          listenable: widget.playerService,
+          builder: (context, _) {
+            final song = widget.playerService.currentSong;
+            if (song == null) return const SizedBox.shrink();
+
+            final position = widget.playerService.position;
+            final duration = widget.playerService.duration;
+            final progress = duration.inMilliseconds > 0
+                ? (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
+                : 0.0;
+
+            return Column(
+              children: [
+                // Top bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: const Icon(Icons.keyboard_arrow_down, size: 28, color: Color(0xFF1A1A1A)),
+                      ),
+                      const Expanded(
+                        child: Column(children: [
+                          Text('NOW PLAYING',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                                letterSpacing: 1.5, color: Color(0xFF1A1A1A))),
+                          SizedBox(height: 2),
+                          Text('My Music',
+                            style: TextStyle(fontSize: 12, color: Color(0xFFFF6B35), fontWeight: FontWeight.w500)),
+                        ]),
+                      ),
+                      // Sleep timer icon with countdown badge
+                      GestureDetector(
+                        onTap: _showSleepTimerSheet,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Icon(
+                              Icons.bedtime_outlined,
+                              size: 22,
+                              color: widget.playerService.sleepTimerActive
+                                  ? const Color(0xFFFF6B35)
+                                  : const Color(0xFF1A1A1A),
+                            ),
+                            if (widget.playerService.sleepTimerActive)
+                              Positioned(
+                                top: -4, right: -4,
+                                child: Container(
+                                  width: 8, height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFFF6B35),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                        SizedBox(height: 2),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Sleep timer countdown bar
+                if (widget.playerService.sleepTimerActive)
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF6B35).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.bedtime, size: 16, color: Color(0xFFFF6B35)),
+                        const SizedBox(width: 8),
+                        const Text('Stops in ', style: TextStyle(fontSize: 13, color: Color(0xFF666666))),
                         Text(
-                          'My music list',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFFFF6B35),
-                            fontWeight: FontWeight.w500,
-                          ),
+                          widget.playerService.sleepTimerDisplay,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFFFF6B35)),
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: widget.playerService.cancelSleepTimer,
+                          child: const Text('Cancel',
+                            style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600)),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(
-                    Icons.more_vert,
-                    size: 22,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ],
-              ),
-            ),
 
-            // Album Art - Large with rotation
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AlbumScreen()),
-                  );
-                },
-                child: AnimatedBuilder(
-                  animation: _albumController,
-                  builder: (_, child) {
-                    return Container(
-                      height: 280,
+                // Album Art — rotating disc
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: AnimatedBuilder(
+                    animation: _rotateController,
+                    builder: (_, child) => Transform.rotate(
+                      angle: _rotateController.value * 2 * math.pi,
+                      child: child,
+                    ),
+                    child: Container(
+                      height: 250,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
+                        shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF7B9EA8).withOpacity(0.4),
+                            color: const Color(0xFFFF6B35).withOpacity(0.25),
                             blurRadius: 30,
                             offset: const Offset(0, 15),
                           ),
                         ],
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Stack(
-                          fit: StackFit.expand,
+                      child: ClipOval(
+                        child: QueryArtworkWidget(
+                          id: song.id,
+                          type: ArtworkType.AUDIO,
+                          artworkWidth: 250,
+                          artworkHeight: 250,
+                          artworkBorder: BorderRadius.circular(125),
+                          artworkFit: BoxFit.cover,
+                          nullArtworkWidget: Container(
+                            width: 250, height: 250,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  Colors.primaries[song.id % Colors.primaries.length],
+                                  Colors.primaries[song.id % Colors.primaries.length].withOpacity(0.5),
+                                ],
+                              ),
+                            ),
+                            child: const Icon(Icons.music_note, color: Colors.white, size: 70),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Song info
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Column(
+                    children: [
+                      Text(song.artist ?? 'Unknown Artist',
+                        style: const TextStyle(fontSize: 13, color: Color(0xFF9E9E9E), fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 6),
+                      Text(song.title,
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Progress slider
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
+                      SliderTheme(
+                        data: SliderThemeData(
+                          trackHeight: 3,
+                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                          activeTrackColor: const Color(0xFFFF6B35),
+                          inactiveTrackColor: const Color(0xFFE0E0E0),
+                          thumbColor: const Color(0xFFFF6B35),
+                          overlayColor: const Color(0xFFFF6B35).withOpacity(0.2),
+                        ),
+                        child: Slider(
+                          value: progress,
+                          onChanged: (val) {
+                            widget.playerService.seekTo(Duration(
+                              milliseconds: (val * duration.inMilliseconds).round(),
+                            ));
+                          },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Gradient background mimicking album art
-                            Container(
-                              decoration: const BoxDecoration(
-                                gradient: RadialGradient(
-                                  center: Alignment(-0.3, -0.3),
-                                  radius: 1.2,
-                                  colors: [
-                                    Color(0xFF9BC8D8),
-                                    Color(0xFF6BA3BE),
-                                    Color(0xFF4A7A94),
-                                    Color(0xFFD4884A),
-                                    Color(0xFFE8A060),
-                                  ],
-                                  stops: [0.0, 0.3, 0.5, 0.8, 1.0],
-                                ),
-                              ),
-                            ),
-                            // Ghost/character overlay
-                            Positioned(
-                              bottom: 40,
-                              left: 0,
-                              right: 0,
-                              child: Center(
-                                child: Container(
-                                  width: 80,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.9),
-                                    borderRadius: BorderRadius.circular(40),
-                                  ),
-                                  child: const Icon(
-                                    Icons.face,
-                                    size: 50,
-                                    color: Color(0xFF4A7A94),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Waveform at bottom of album art
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              child: AnimatedBuilder(
-                                animation: _waveController,
-                                builder: (_, __) => _buildWaveform(),
-                              ),
-                            ),
+                            Text(_fmt(position),
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E))),
+                            Text(_fmt(duration),
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E))),
                           ],
                         ),
                       ),
-                    );
-                  },
+                    ],
+                  ),
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 28),
+                const SizedBox(height: 12),
 
-            // Song title & artist
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 28),
-              child: Column(
-                children: [
-                  Text(
-                    'Kids See Ghosts',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF9E9E9E),
-                      fontWeight: FontWeight.w500,
-                    ),
+                // Playback controls
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildRoundBtn(Icons.skip_previous, widget.playerService.previous),
+                      _buildPlayBtn(),
+                      _buildRoundBtn(Icons.skip_next, widget.playerService.next),
+                    ],
                   ),
-                  SizedBox(height: 6),
-                  Text(
-                    '4th Dimension (feat. Loui',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
+                ),
 
-            const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
-            // Progress Slider
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  SliderTheme(
-                    data: SliderThemeData(
-                      trackHeight: 3,
-                      thumbShape: const RoundSliderThumbShape(
-                        enabledThumbRadius: 8,
-                      ),
-                      overlayShape: const RoundSliderOverlayShape(
-                        overlayRadius: 14,
-                      ),
-                      activeTrackColor: const Color(0xFFFF6B35),
-                      inactiveTrackColor: const Color(0xFFE0E0E0),
-                      thumbColor: const Color(0xFFFF6B35),
-                      overlayColor: const Color(0xFFFF6B35).withOpacity(0.2),
-                    ),
-                    child: Slider(
-                      value: sliderValue,
-                      onChanged: (val) => setState(() => sliderValue = val),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _formatTime(sliderValue),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF9E9E9E),
-                          ),
+                // Bottom actions
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 36),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Repeat
+                      GestureDetector(
+                        onTap: widget.playerService.toggleLoop,
+                        child: Icon(
+                          widget.playerService.loopMode == LoopMode.one
+                              ? Icons.repeat_one
+                              : Icons.repeat,
+                          size: 22,
+                          color: widget.playerService.loopMode != LoopMode.off
+                              ? const Color(0xFFFF6B35)
+                              : const Color(0xFF9E9E9E),
                         ),
-                        const Text(
-                          '2:46',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF9E9E9E),
-                          ),
+                      ),
+                      // Queue position
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8E8E8),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Playback Controls
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Previous
-                  GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.skip_previous,
-                        color: Color(0xFF1A1A1A),
-                        size: 24,
-                      ),
-                    ),
-                  ),
-
-                  // Play/Pause - large orange button
-                  GestureDetector(
-                    onTap: () {
-                      setState(() => isPlaying = !isPlaying);
-                      if (isPlaying) {
-                        _albumController.repeat();
-                      } else {
-                        _albumController.stop();
-                      }
-                    },
-                    child: Container(
-                      width: 68,
-                      height: 68,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFFFF8A50), Color(0xFFFF5722)],
+                        child: Text(
+                          '${widget.playerService.currentIndex + 1} / ${widget.playerService.songs.length}',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF666666)),
                         ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF6B35).withOpacity(0.4),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
                       ),
-                      child: Icon(
-                        isPlaying ? Icons.pause : Icons.play_arrow,
-                        color: Colors.white,
-                        size: 32,
+                      // Sleep timer shortcut
+                      GestureDetector(
+                        onTap: _showSleepTimerSheet,
+                        child: Icon(
+                          Icons.bedtime_outlined,
+                          size: 22,
+                          color: widget.playerService.sleepTimerActive
+                              ? const Color(0xFFFF6B35)
+                              : const Color(0xFF9E9E9E),
+                        ),
                       ),
-                    ),
+                      // Shuffle
+                      GestureDetector(
+                        onTap: widget.playerService.toggleShuffle,
+                        child: Icon(
+                          Icons.shuffle,
+                          size: 22,
+                          color: widget.playerService.shuffle
+                              ? const Color(0xFFFF6B35)
+                              : const Color(0xFF9E9E9E),
+                        ),
+                      ),
+                    ],
                   ),
-
-                  // Next
-                  GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.skip_next,
-                        color: Color(0xFF1A1A1A),
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Bottom action bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 36),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildBottomAction(Icons.repeat, false),
-                  _buildBottomAction(Icons.favorite_border, false),
-                  _buildBottomAction(Icons.keyboard_arrow_up, false),
-                  _buildBottomAction(Icons.chat_bubble_outline, false),
-                  _buildBottomAction(Icons.shuffle, true),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-          ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildWaveform() {
-    final random = math.Random(42);
-    final bars = List.generate(40, (i) {
-      final progress = sliderValue * 40;
-      final isPast = i < progress;
-      final height = 8.0 + random.nextDouble() * 28;
-      return _WaveBar(
-        height: height,
-        isPast: isPast,
-        animation: _waveController,
-        index: i,
-      );
-    });
-
-    return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: bars,
-      ),
-    );
-  }
-
-  Widget _buildBottomAction(IconData icon, bool isActive) {
+  Widget _buildPlayBtn() {
     return GestureDetector(
-      onTap: () {},
-      child: Icon(
-        icon,
-        size: 22,
-        color: isActive ? const Color(0xFFFF6B35) : const Color(0xFF9E9E9E),
+      onTap: widget.playerService.togglePlay,
+      child: Container(
+        width: 68, height: 68,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFF8A50), Color(0xFFFF5722)],
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF6B35).withOpacity(0.4),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Icon(
+          widget.playerService.isPlaying ? Icons.pause : Icons.play_arrow,
+          color: Colors.white, size: 32,
+        ),
       ),
     );
   }
-}
 
-class _WaveBar extends StatelessWidget {
-  final double height;
-  final bool isPast;
-  final AnimationController animation;
-  final int index;
-
-  const _WaveBar({
-    required this.height,
-    required this.isPast,
-    required this.animation,
-    required this.index,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (_, __) {
-        final animatedHeight = isPast
-            ? height * (0.8 + 0.2 * math.sin(animation.value * math.pi + index * 0.3))
-            : height;
-        return Container(
-          width: 3,
-          height: animatedHeight,
-          decoration: BoxDecoration(
-            color: isPast
-                ? const Color(0xFFFF6B35).withOpacity(0.8)
-                : Colors.white.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        );
-      },
+  Widget _buildRoundBtn(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 52, height: 52,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Icon(icon, color: const Color(0xFF1A1A1A), size: 24),
+      ),
     );
   }
 }
