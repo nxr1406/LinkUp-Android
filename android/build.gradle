@@ -27,6 +27,17 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+// Fix for on_audio_query_android: inject missing namespace required by AGP 8+
+subprojects { subproject ->
+    if (subproject.name == "on_audio_query_android") {
+        subproject.afterEvaluate {
+            if (subproject.hasProperty("android")) {
+                subproject.android.namespace = "com.lucasjosino.on_audio_query"
+            }
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
