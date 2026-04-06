@@ -21,7 +21,20 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _requestPermissionAndLoad();
+    // Wait for first frame so context is fully ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestPermissionAndLoad();
+    });
+    // Listen to player changes to rebuild UI
+    _playerService.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _playerService.dispose();
+    super.dispose();
   }
 
   Future<void> _requestPermissionAndLoad() async {
