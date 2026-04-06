@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:audio_session/audio_session.dart';
 
@@ -16,7 +15,6 @@ class AudioPlayerService extends ChangeNotifier {
   bool _shuffle = false;
   LoopMode _loopMode = LoopMode.off;
 
-  // Sleep timer
   Timer? _sleepTimer;
   Duration? _sleepTimerRemaining;
   Timer? _sleepCountdown;
@@ -30,154 +28,143 @@ class AudioPlayerService extends ChangeNotifier {
   LoopMode get loopMode => _loopMode;
   Duration? get sleepTimerRemaining => _sleepTimerRemaining;
   bool get sleepTimerActive => _sleepTimer != null;
-
-  SongModel? get currentSong =>
-      _songs.isNotEmpty ? _songs[_currentIndex] : null;
+  SongModel? get currentSong => _songs.isNotEmpty ? _songs[_currentIndex] : null;
 
   AudioPlayerService() {
     _init();
   }
 
   Future<void> _init() async {
-    final session = await AudioSession.instance;
-    await session.configure(const AudioSessionConfiguration.music());
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+    } catch (_) {}
 
     _player.playingStream.listen((playing) {
       _isPlaying = playing;
       notifyListeners();
     });
-
     _player.positionStream.listen((pos) {
       _position = pos;
       notifyListeners();
     });
-
     _player.durationStream.listen((dur) {
       _duration = dur ?? Duration.zero;
       notifyListeners();
     });
-
     _player.currentIndexStream.listen((index) {
       if (index != null && index != _currentIndex) {
         _currentIndex = index;
         notifyListeners();
       }
     });
+    _player.processingStateStream.listen((state) {
+      if (state == ProcessingState.completed) {
+        next();
+      }
+    });
   }
 
   Future<void> loadSongs(List<SongModel> songs) async {
     _songs = songs;
+    _currentIndex = 0;
     notifyListeners();
 
-    final playlist = ConcatenatingAudioSource(
-      children: songs.map((song) {
-        final path = song.data ?? '';
-        // Local file paths need file:// prefix to be valid URIs
-        final uri = path.startsWith('content://') || path.startsWith('file://')
-            ? Uri.parse(path)
-            : Uri.file(path);
+    try {
+      final sources = songs
+          .where((s) => (s.data ?? '').isNotEmpty)
+          .map((s) {
+            final path = s.data!;
+            final uri = path.startsWith('content://') || path.startsWith('file://')
+                ? Uri.parse(path)
+                : Uri.file(path);
+            return AudioSource.uri(uri);
+          })
+          .toList();
 
-        return AudioSource.uri(
-          uri,
-          tag: MediaItem(
-            id: song.id.toString(),
-            title: song.title,
-            artist: song.artist ?? 'Unknown Artist',
-            album: song.album ?? 'Unknown Album',
-          ),
-        );
-      }).toList(),
-    );
-
-    await _player.setAudioSource(playlist, preload: false);
+      if (sources.isEmpty) return;
+      await _player.setAudioSource(
+        ConcatenatingAudioSource(children: sources),
+        preload: false,
+      );
+    } catch (e) {
+      debugPrint('loadSongs error: $e');
+    }
   }
 
   Future<void> playSongAt(int index) async {
     if (index < 0 || index >= _songs.length) return;
+    _currentIndex = index;
+    notifyListeners();
+
     try {
-      _currentIndex = index;
       await _player.seek(Duration.zero, index: index);
       await _player.play();
-      notifyListeners();
     } catch (e) {
-      // If seek fails (e.g. bad file), try loading just that one song directly
+      debugPrint('playSongAt seek error: $e — trying direct load');
       try {
         final path = _songs[index].data ?? '';
+        if (path.isEmpty) return;
         final uri = path.startsWith('content://') || path.startsWith('file://')
             ? Uri.parse(path)
             : Uri.file(path);
-        await _player.setAudioSource(
-          AudioSource.uri(
-            uri,
-            tag: MediaItem(
-              id: _songs[index].id.toString(),
-              title: _songs[index].title,
-              artist: _songs[index].artist ?? 'Unknown Artist',
-            ),
-          ),
-        );
+        await _player.setAudioSource(AudioSource.uri(uri));
         await _player.play();
-        notifyListeners();
-      } catch (_) {}
+      } catch (e2) {
+        debugPrint('playSongAt direct load error: $e2');
+      }
     }
   }
 
   Future<void> togglePlay() async {
-    _player.playing ? await _player.pause() : await _player.play();
+    try {
+      _player.playing ? await _player.pause() : await _player.play();
+    } catch (_) {}
   }
 
   Future<void> next() async {
-    if (_currentIndex < _songs.length - 1) {
-      await _player.seekToNext();
-    } else {
-      await _player.seek(Duration.zero, index: 0);
-      await _player.play();
-    }
+    final nextIndex = _currentIndex < _songs.length - 1 ? _currentIndex + 1 : 0;
+    await playSongAt(nextIndex);
   }
 
   Future<void> previous() async {
     if (_position.inSeconds > 3) {
       await _player.seek(Duration.zero);
     } else {
-      await _player.seekToPrevious();
+      final prevIndex = _currentIndex > 0 ? _currentIndex - 1 : 0;
+      await playSongAt(prevIndex);
     }
   }
 
   Future<void> seekTo(Duration position) async {
-    await _player.seek(position);
+    try { await _player.seek(position); } catch (_) {}
   }
 
   Future<void> toggleShuffle() async {
     _shuffle = !_shuffle;
-    await _player.setShuffleModeEnabled(_shuffle);
+    try { await _player.setShuffleModeEnabled(_shuffle); } catch (_) {}
     notifyListeners();
   }
 
   Future<void> toggleLoop() async {
-    if (_loopMode == LoopMode.off) {
-      _loopMode = LoopMode.all;
-    } else if (_loopMode == LoopMode.all) {
-      _loopMode = LoopMode.one;
-    } else {
-      _loopMode = LoopMode.off;
-    }
-    await _player.setLoopMode(_loopMode);
+    _loopMode = _loopMode == LoopMode.off
+        ? LoopMode.all
+        : _loopMode == LoopMode.all
+            ? LoopMode.one
+            : LoopMode.off;
+    try { await _player.setLoopMode(_loopMode); } catch (_) {}
     notifyListeners();
   }
 
-  // ─── Sleep Timer ───────────────────────────────────────────
   void setSleepTimer(Duration duration) {
     cancelSleepTimer();
-
     _sleepTimerRemaining = duration;
     notifyListeners();
 
-    // Countdown every second
     _sleepCountdown = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_sleepTimerRemaining == null) return;
       _sleepTimerRemaining = _sleepTimerRemaining! - const Duration(seconds: 1);
       if (_sleepTimerRemaining!.inSeconds <= 0) {
-        _sleepTimerRemaining = Duration.zero;
         cancelSleepTimer();
         _player.pause();
       }
