@@ -71,13 +71,19 @@ class AudioPlayerService extends ChangeNotifier {
 
     final playlist = ConcatenatingAudioSource(
       children: songs.map((song) {
+        final path = song.data ?? '';
+        // Local file paths need file:// prefix to be valid URIs
+        final uri = path.startsWith('content://') || path.startsWith('file://')
+            ? Uri.parse(path)
+            : Uri.file(path);
+
         return AudioSource.uri(
-          Uri.parse(song.data ?? ''),
+          uri,
           tag: MediaItem(
             id: song.id.toString(),
             title: song.title,
-            artist: song.artist,
-            album: song.album,
+            artist: song.artist ?? 'Unknown Artist',
+            album: song.album ?? 'Unknown Album',
           ),
         );
       }).toList(),
@@ -88,10 +94,32 @@ class AudioPlayerService extends ChangeNotifier {
 
   Future<void> playSongAt(int index) async {
     if (index < 0 || index >= _songs.length) return;
-    _currentIndex = index;
-    await _player.seek(Duration.zero, index: index);
-    await _player.play();
-    notifyListeners();
+    try {
+      _currentIndex = index;
+      await _player.seek(Duration.zero, index: index);
+      await _player.play();
+      notifyListeners();
+    } catch (e) {
+      // If seek fails (e.g. bad file), try loading just that one song directly
+      try {
+        final path = _songs[index].data ?? '';
+        final uri = path.startsWith('content://') || path.startsWith('file://')
+            ? Uri.parse(path)
+            : Uri.file(path);
+        await _player.setAudioSource(
+          AudioSource.uri(
+            uri,
+            tag: MediaItem(
+              id: _songs[index].id.toString(),
+              title: _songs[index].title,
+              artist: _songs[index].artist ?? 'Unknown Artist',
+            ),
+          ),
+        );
+        await _player.play();
+        notifyListeners();
+      } catch (_) {}
+    }
   }
 
   Future<void> togglePlay() async {
