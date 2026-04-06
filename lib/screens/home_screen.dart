@@ -25,11 +25,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _requestPermissionAndLoad() async {
-    // Android 13+ uses READ_MEDIA_AUDIO, older uses READ_EXTERNAL_STORAGE
-    PermissionStatus status;
-    if (await Permission.audio.isSupported) {
-      status = await Permission.audio.request();
-    } else {
+    // Android 13+ (API 33+) uses READ_MEDIA_AUDIO, older uses READ_EXTERNAL_STORAGE
+    // Permission.audio.isSupported doesn't exist — request directly and fallback
+    PermissionStatus status = await Permission.audio.request();
+    if (status == PermissionStatus.denied ||
+        status == PermissionStatus.permanentlyDenied) {
       status = await Permission.storage.request();
     }
 
