@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/chat_model.dart';
 import '../models/user_model.dart';
 import '../services/chat_service.dart';
@@ -31,7 +30,6 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, snapshot) {
         final me = snapshot.data;
         return Scaffold(
-          backgroundColor: AppColors.white,
           body: IndexedStack(
             index: _currentIndex,
             children: [
@@ -40,36 +38,27 @@ class _HomeScreenState extends State<HomeScreen> {
               ProfileScreen(me: me),
             ],
           ),
-          bottomNavigationBar: Container(
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey.shade200)),
-            ),
-            child: BottomNavigationBar(
-              currentIndex: _currentIndex,
-              onTap: (i) => setState(() => _currentIndex = i),
-              selectedItemColor: AppColors.black,
-              unselectedItemColor: AppColors.grey,
-              backgroundColor: AppColors.white,
-              elevation: 0,
-              showSelectedLabels: false,
-              showUnselectedLabels: false,
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.chat_bubble_outline, size: 26),
-                  activeIcon: Icon(Icons.chat_bubble, size: 26),
-                  label: 'Chats',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.search, size: 26),
-                  label: 'Search',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.person_outline, size: 26),
-                  activeIcon: Icon(Icons.person, size: 26),
-                  label: 'Profile',
-                ),
-              ],
-            ),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (i) => setState(() => _currentIndex = i),
+            showSelectedLabels: false,
+            showUnselectedLabels: false,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.chat_bubble_outline, size: 26),
+                activeIcon: Icon(Icons.chat_bubble, size: 26),
+                label: 'Chats',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.search, size: 26),
+                label: 'Search',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline, size: 26),
+                activeIcon: Icon(Icons.person, size: 26),
+                label: 'Profile',
+              ),
+            ],
           ),
         );
       },
@@ -83,39 +72,33 @@ class _ChatsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final currentUser = FirebaseAuth.instance.currentUser!;
     final chatService = ChatService();
     final userService = UserService();
 
     return Scaffold(
-      backgroundColor: AppColors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.white,
-        elevation: 0,
         titleSpacing: 20,
-        title: Row(
-          children: [
-            Text(
-              me?.username ?? 'LinkUp',
-              style: const TextStyle(
-                color: AppColors.black,
+        title: Row(children: [
+          Text(
+            me?.username ?? 'LinkUp',
+            style: TextStyle(
+                color: AppColors.textPrimary(dark),
                 fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-            if (me?.isVerified == true) ...[
-              const SizedBox(width: 4),
-              const Icon(Icons.verified, color: AppColors.verified, size: 18),
-            ],
+                fontSize: 20),
+          ),
+          if (me?.isVerified == true) ...[
+            const SizedBox(width: 4),
+            const Icon(Icons.verified, color: AppColors.verified, size: 18),
           ],
-        ),
+        ]),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_square, color: AppColors.black, size: 24),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NewChatScreen()),
-            ),
+            icon: Icon(Icons.edit_square,
+                color: AppColors.textPrimary(dark), size: 24),
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const NewChatScreen())),
           ),
         ],
       ),
@@ -129,29 +112,28 @@ class _ChatsTab extends StatelessWidget {
           final chats = snapshot.data ?? [];
           if (chats.isEmpty) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.chat_bubble_outline,
-                      size: 64, color: Colors.grey.shade300),
-                  const SizedBox(height: 16),
-                  Text('No chats yet',
-                      style: TextStyle(
-                          color: Colors.grey.shade400, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  Text('Tap the edit icon to start chatting',
-                      style: TextStyle(
-                          color: Colors.grey.shade400, fontSize: 13)),
-                ],
-              ),
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(Icons.chat_bubble_outline,
+                    size: 64,
+                    color: AppColors.textSecondary(dark).withOpacity(0.4)),
+                const SizedBox(height: 16),
+                Text('No chats yet',
+                    style: TextStyle(
+                        color: AppColors.textSecondary(dark), fontSize: 16)),
+                const SizedBox(height: 8),
+                Text('Tap the edit icon to start chatting',
+                    style: TextStyle(
+                        color: AppColors.textSecondary(dark), fontSize: 13)),
+              ]),
             );
           }
           return ListView.builder(
             itemCount: chats.length,
             itemBuilder: (context, index) {
               final chat = chats[index];
-              final otherUid = chat.participants
-                  .firstWhere((id) => id != currentUser.uid, orElse: () => '');
+              final otherUid = chat.participants.firstWhere(
+                  (id) => id != currentUser.uid,
+                  orElse: () => '');
               return FutureBuilder<UserModel?>(
                 future: userService.getUser(otherUid),
                 builder: (context, userSnap) {
@@ -162,6 +144,7 @@ class _ChatsTab extends StatelessWidget {
                     other: other,
                     currentUid: currentUser.uid,
                     unreadCount: unread,
+                    dark: dark,
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -188,14 +171,12 @@ class _ChatTile extends StatelessWidget {
   final UserModel? other;
   final String currentUid;
   final int unreadCount;
+  final bool dark;
   final VoidCallback onTap;
 
   const _ChatTile({
-    required this.chat,
-    required this.other,
-    required this.currentUid,
-    required this.unreadCount,
-    required this.onTap,
+    required this.chat, required this.other, required this.currentUid,
+    required this.unreadCount, required this.dark, required this.onTap,
   });
 
   String _formatTime(DateTime? time) {
@@ -215,73 +196,61 @@ class _ChatTile extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: AvatarWidget(user: other, radius: 26),
-      title: Row(
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    other?.username ?? '...',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: AppColors.black,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (other?.isVerified == true) ...[
-                  const SizedBox(width: 3),
-                  const Icon(Icons.verified,
-                      color: AppColors.verified, size: 14),
-                ],
-              ],
-            ),
-          ),
-          Text(
-            _formatTime(chat.lastMessageTime),
-            style: const TextStyle(
-                color: AppColors.grey, fontSize: 12),
-          ),
-        ],
-      ),
-      subtitle: Row(
-        children: [
-          if (isMe)
-            const Text('You: ',
-                style: TextStyle(color: AppColors.grey, fontSize: 13)),
-          Expanded(
-            child: Text(
-              chat.lastMessage ?? '',
-              style: TextStyle(
-                color: unreadCount > 0 ? AppColors.black : AppColors.grey,
-                fontSize: 13,
-                fontWeight: unreadCount > 0
-                    ? FontWeight.w500
-                    : FontWeight.normal,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (unreadCount > 0)
-            Container(
-              margin: const EdgeInsets.only(left: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(10),
-              ),
+      title: Row(children: [
+        Expanded(
+          child: Row(children: [
+            Flexible(
               child: Text(
-                unreadCount > 99 ? '99+' : '$unreadCount',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold),
+                other?.username ?? '...',
+                style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: AppColors.textPrimary(dark)),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-        ],
-      ),
+            if (other?.isVerified == true) ...[
+              const SizedBox(width: 3),
+              const Icon(Icons.verified, color: AppColors.verified, size: 14),
+            ],
+          ]),
+        ),
+        Text(_formatTime(chat.lastMessageTime),
+            style: TextStyle(
+                color: AppColors.textSecondary(dark), fontSize: 12)),
+      ]),
+      subtitle: Row(children: [
+        if (isMe)
+          Text('You: ',
+              style: TextStyle(
+                  color: AppColors.textSecondary(dark), fontSize: 13)),
+        Expanded(
+          child: Text(
+            chat.lastMessage ?? '',
+            style: TextStyle(
+              color: unreadCount > 0
+                  ? AppColors.textPrimary(dark)
+                  : AppColors.textSecondary(dark),
+              fontSize: 13,
+              fontWeight: unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (unreadCount > 0)
+          Container(
+            margin: const EdgeInsets.only(left: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(10)),
+            child: Text(
+              unreadCount > 99 ? '99+' : '$unreadCount',
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+          ),
+      ]),
       onTap: onTap,
     );
   }

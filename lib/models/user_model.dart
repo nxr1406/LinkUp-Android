@@ -4,6 +4,7 @@ class UserModel {
   final String displayName;
   final String email;
   final String? photoBase64;
+  final String? bio;
   final bool isVerified;
   final bool isAdmin;
   final bool isSuspended;
@@ -16,6 +17,7 @@ class UserModel {
     required this.displayName,
     required this.email,
     this.photoBase64,
+    this.bio,
     this.isVerified = false,
     this.isAdmin = false,
     this.isSuspended = false,
@@ -30,6 +32,7 @@ class UserModel {
       displayName: map['displayName'] ?? '',
       email: map['email'] ?? '',
       photoBase64: map['photoBase64'],
+      bio: map['bio'],
       isVerified: map['isVerified'] ?? false,
       isAdmin: map['isAdmin'] ?? false,
       isSuspended: map['isSuspended'] ?? false,
@@ -48,6 +51,7 @@ class UserModel {
       'displayName': displayName,
       'email': email,
       'photoBase64': photoBase64,
+      'bio': bio,
       'isVerified': isVerified,
       'isAdmin': isAdmin,
       'isSuspended': isSuspended,
@@ -60,6 +64,7 @@ class UserModel {
     String? displayName,
     String? username,
     String? photoBase64,
+    String? bio,
     bool? isVerified,
     bool? isAdmin,
     bool? isSuspended,
@@ -71,6 +76,7 @@ class UserModel {
       displayName: displayName ?? this.displayName,
       email: email,
       photoBase64: photoBase64 ?? this.photoBase64,
+      bio: bio ?? this.bio,
       isVerified: isVerified ?? this.isVerified,
       isAdmin: isAdmin ?? this.isAdmin,
       isSuspended: isSuspended ?? this.isSuspended,

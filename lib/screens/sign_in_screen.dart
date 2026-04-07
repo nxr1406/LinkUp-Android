@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 import 'sign_up_screen.dart';
@@ -26,28 +27,44 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _signIn() async {
-    if (_emailCtrl.text.trim().isEmpty || _passwordCtrl.text.isEmpty) {
+    FocusScope.of(context).unfocus();
+    final email = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text;
+
+    if (email.isEmpty || password.isEmpty) {
       _showError('Please fill in all fields');
       return;
     }
+
     setState(() => _loading = true);
     try {
-      await _authService.signIn(
-        email: _emailCtrl.text.trim(),
-        password: _passwordCtrl.text,
-      );
+      await _authService.signIn(email: email, password: password);
+      // AuthWrapper handles navigation automatically via authStateChanges stream
     } catch (e) {
       String msg = e.toString().replaceAll('Exception: ', '');
-      if (msg.contains('user-not-found') || msg.contains('wrong-password') || msg.contains('invalid-credential')) {
+      if (msg.contains('user-not-found') ||
+          msg.contains('wrong-password') ||
+          msg.contains('invalid-credential') ||
+          msg.contains('INVALID_LOGIN_CREDENTIALS') ||
+          msg.contains('invalid-email')) {
         msg = 'Invalid email or password';
+      } else if (msg.contains('network-request-failed')) {
+        msg = 'No internet connection';
+      } else if (msg.contains('too-many-requests')) {
+        msg = 'Too many attempts. Try again later';
+      } else if (msg.contains('suspended')) {
+        msg = 'Your account has been suspended';
+      } else {
+        msg = 'Sign in failed. Check your credentials';
       }
-      _showError(msg);
+      if (mounted) _showError(msg);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _forgotPassword() async {
+    FocusScope.of(context).unfocus();
     if (_emailCtrl.text.trim().isEmpty) {
       _showError('Enter your email first');
       return;
@@ -55,159 +72,190 @@ class _SignInScreenState extends State<SignInScreen> {
     try {
       await _authService.sendPasswordReset(_emailCtrl.text.trim());
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password reset email sent!'), backgroundColor: Colors.green),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Password reset email sent!'),
+          backgroundColor: Colors.green,
+        ));
       }
-    } catch (e) {
-      _showError('Failed to send reset email');
+    } catch (_) {
+      _showError('Could not send reset email. Check the address.');
     }
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: Colors.red.shade700,
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          // Top-right pink blobs
-          Positioned(
-            top: -50,
-            right: -30,
-            child: _PinkBlob(size: 200),
-          ),
-          Positioned(
-            top: 60,
-            right: 100,
-            child: _PinkBlob(size: 120, opacity: 0.6),
-          ),
-          // Bottom pink blobs
-          Positioned(
-            bottom: -40,
-            left: -40,
-            child: _PinkBlob(size: 200),
-          ),
-          Positioned(
-            bottom: 60,
-            right: -20,
-            child: _PinkBlob(size: 130, opacity: 0.7),
-          ),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 50),
-                  const Text(
-                    'Welcome\nBack',
-                    style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.black,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Hey! Good to see you again',
-                    style: TextStyle(fontSize: 15, color: AppColors.textMedium),
-                  ),
-                  const SizedBox(height: 36),
-                  _buildField(
-                    controller: _emailCtrl,
-                    hint: 'Email',
-                    icon: Icons.email_outlined,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 14),
-                  _buildField(
-                    controller: _passwordCtrl,
-                    hint: 'Password',
-                    icon: Icons.lock_outline,
-                    obscure: _obscure,
-                    toggleObscure: () => setState(() => _obscure = !_obscure),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        resizeToAvoidBottomInset: true,
+        body: LayoutBuilder(builder: (context, constraints) {
+          final w = constraints.maxWidth;
+          final h = constraints.maxHeight;
+          return Stack(
+            children: [
+              // ── TOP-RIGHT blobs (fixed, not scrolling) ──
+              Positioned(top: -55, right: -35,
+                  child: _PinkBlob(size: w * 0.56)),
+              Positioned(top: h * 0.06, right: w * 0.18,
+                  child: _PinkBlob(size: w * 0.35, opacity: 0.65)),
+
+              // ── BOTTOM blobs (fixed) ──
+              Positioned(bottom: -45, left: -45,
+                  child: _PinkBlob(size: w * 0.58)),
+              Positioned(bottom: h * 0.05, right: -25,
+                  child: _PinkBlob(size: w * 0.38, opacity: 0.70)),
+
+              // ── SCROLLABLE CONTENT ──
+              SafeArea(
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: h),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Checkbox(
-                            value: _rememberMe,
-                            onChanged: (v) => setState(() => _rememberMe = v ?? false),
-                            activeColor: AppColors.primary,
+                          SizedBox(height: h * 0.07),
+
+                          const Text('Welcome\nBack',
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.black,
+                                height: 1.2,
+                              )),
+                          const SizedBox(height: 8),
+                          const Text('Hey! Good to see you again',
+                              style: TextStyle(
+                                  fontSize: 15, color: AppColors.textMedium)),
+                          const SizedBox(height: 40),
+
+                          _buildField(
+                            controller: _emailCtrl,
+                            hint: 'Email',
+                            icon: Icons.email_outlined,
+                            keyboardType: TextInputType.emailAddress,
                           ),
-                          const Text('Remember me',
-                              style: TextStyle(color: AppColors.textMedium, fontSize: 13)),
+                          const SizedBox(height: 14),
+                          _buildField(
+                            controller: _passwordCtrl,
+                            hint: 'Password',
+                            icon: Icons.lock_outline,
+                            obscure: _obscure,
+                            toggleObscure: () =>
+                                setState(() => _obscure = !_obscure),
+                          ),
+                          const SizedBox(height: 6),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(children: [
+                                SizedBox(
+                                  width: 36, height: 36,
+                                  child: Checkbox(
+                                    value: _rememberMe,
+                                    onChanged: (v) =>
+                                        setState(() => _rememberMe = v ?? false),
+                                    activeColor: AppColors.primary,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4)),
+                                  ),
+                                ),
+                                const Text('Remember me',
+                                    style: TextStyle(
+                                        color: AppColors.textMedium,
+                                        fontSize: 13)),
+                              ]),
+                              TextButton(
+                                onPressed: _forgotPassword,
+                                style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap),
+                                child: const Text('Forgot password?',
+                                    style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+
+                          SizedBox(
+                            width: double.infinity,
+                            height: 54,
+                            child: ElevatedButton(
+                              onPressed: _loading ? null : _signIn,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor:
+                                    AppColors.primary.withOpacity(0.7),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(32)),
+                                elevation: 0,
+                              ),
+                              child: _loading
+                                  ? const SizedBox(
+                                      width: 22, height: 22,
+                                      child: CircularProgressIndicator(
+                                          color: Colors.white, strokeWidth: 2.5))
+                                  : const Text('SIGN IN',
+                                      style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.4)),
+                            ),
+                          ),
+                          const SizedBox(height: 22),
+
+                          Center(
+                            child: GestureDetector(
+                              onTap: () => Navigator.pushReplacement(context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const SignUpScreen())),
+                              child: RichText(
+                                text: const TextSpan(
+                                  text: "Don't have an account? ",
+                                  style: TextStyle(
+                                      color: AppColors.textMedium, fontSize: 14),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Sign up',
+                                      style: TextStyle(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: h * 0.18),
                         ],
                       ),
-                      TextButton(
-                        onPressed: _forgotPassword,
-                        child: const Text('Forgot password?',
-                            style: TextStyle(color: AppColors.primary, fontSize: 13)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _loading ? null : _signIn,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30)),
-                        elevation: 0,
-                      ),
-                      child: _loading
-                          ? const CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2)
-                          : const Text('SIGN IN',
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2)),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Center(
-                    child: GestureDetector(
-                      onTap: () => Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SignUpScreen()),
-                      ),
-                      child: RichText(
-                        text: const TextSpan(
-                          text: "Don't have an account? ",
-                          style: TextStyle(color: AppColors.textMedium),
-                          children: [
-                            TextSpan(
-                              text: 'Sign up',
-                              style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                ],
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        }),
       ),
     );
   }
@@ -223,20 +271,18 @@ class _SignInScreenState extends State<SignInScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10, offset: const Offset(0, 3)),
         ],
       ),
       child: TextField(
         controller: controller,
         obscureText: obscure,
         keyboardType: keyboardType,
-        style: const TextStyle(color: AppColors.textDark),
+        style: const TextStyle(color: AppColors.textDark, fontSize: 15),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: const TextStyle(color: AppColors.grey),
@@ -245,14 +291,17 @@ class _SignInScreenState extends State<SignInScreen> {
               ? IconButton(
                   icon: Icon(
                       obscure ? Icons.visibility_off : Icons.visibility,
-                      color: AppColors.grey,
-                      size: 20),
-                  onPressed: toggleObscure,
-                )
+                      color: AppColors.grey, size: 20),
+                  onPressed: toggleObscure)
               : null,
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.5)),
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
       ),
     );
@@ -274,10 +323,10 @@ class _PinkBlob extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.primary,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(size * 0.6),
-            topRight: Radius.circular(size * 0.3),
-            bottomLeft: Radius.circular(size * 0.4),
-            bottomRight: Radius.circular(size * 0.6),
+            topLeft: Radius.circular(size * 0.62),
+            topRight: Radius.circular(size * 0.28),
+            bottomLeft: Radius.circular(size * 0.38),
+            bottomRight: Radius.circular(size * 0.62),
           ),
         ),
       ),

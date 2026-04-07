@@ -41,10 +41,12 @@ class UserService {
     required String uid,
     String? displayName,
     String? username,
+    String? bio,
   }) async {
     final Map<String, dynamic> updates = {};
     if (displayName != null) updates['displayName'] = displayName;
     if (username != null) updates['username'] = username.toLowerCase();
+    if (bio != null) updates['bio'] = bio;
 
     await _firestore.collection('users').doc(uid).update(updates);
   }

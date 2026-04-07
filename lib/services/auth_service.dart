@@ -54,39 +54,54 @@ class AuthService {
     required String email,
     required String password,
   }) async {
+    // Step 1: Firebase Auth sign in
     final credential = await _auth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
 
-    await _firestore
-        .collection('users')
-        .doc(credential.user!.uid)
-        .update({'lastSeen': FieldValue.serverTimestamp()});
+    final uid = credential.user!.uid;
 
-    final doc = await _firestore
-        .collection('users')
-        .doc(credential.user!.uid)
-        .get();
-
-    if (doc.exists) {
-      final user = UserModel.fromMap(doc.data()!, doc.id);
-      if (user.isSuspended) {
-        await _auth.signOut();
-        throw Exception('Your account has been suspended.');
-      }
-      return user;
+    // Step 2: Update lastSeen — non-fatal, don't block login on failure
+    try {
+      await _firestore
+          .collection('users')
+          .doc(uid)
+          .update({'lastSeen': FieldValue.serverTimestamp()});
+    } catch (_) {
+      // Ignore — user may not have a Firestore doc yet or offline
     }
+
+    // Step 3: Check suspension — also non-fatal if Firestore unavailable
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (doc.exists) {
+        final user = UserModel.fromMap(doc.data()!, doc.id);
+        if (user.isSuspended) {
+          await _auth.signOut();
+          throw Exception('Your account has been suspended.');
+        }
+        return user;
+      }
+    } catch (e) {
+      // If it's a suspension error, rethrow it
+      if (e.toString().contains('suspended')) rethrow;
+      // Otherwise ignore Firestore errors — Auth succeeded, stream will navigate
+    }
+
+    // Auth succeeded; AuthWrapper will navigate via authStateChanges
     return null;
   }
 
   Future<void> signOut() async {
-    if (_auth.currentUser != null) {
-      await _firestore
-          .collection('users')
-          .doc(_auth.currentUser!.uid)
-          .update({'lastSeen': FieldValue.serverTimestamp()});
-    }
+    try {
+      if (_auth.currentUser != null) {
+        await _firestore
+            .collection('users')
+            .doc(_auth.currentUser!.uid)
+            .update({'lastSeen': FieldValue.serverTimestamp()});
+      }
+    } catch (_) {}
     await _auth.signOut();
   }
 
@@ -96,13 +111,15 @@ class AuthService {
 
   Future<UserModel?> getCurrentUserModel() async {
     if (_auth.currentUser == null) return null;
-    final doc = await _firestore
-        .collection('users')
-        .doc(_auth.currentUser!.uid)
-        .get();
-    if (doc.exists) {
-      return UserModel.fromMap(doc.data()!, doc.id);
-    }
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .get();
+      if (doc.exists) {
+        return UserModel.fromMap(doc.data()!, doc.id);
+      }
+    } catch (_) {}
     return null;
   }
 }
