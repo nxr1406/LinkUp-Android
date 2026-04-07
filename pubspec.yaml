@@ -29,6 +29,20 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.11.0
+  flutter_native_splash: ^2.3.2   # স্প্ল্যাশ স্ক্রিনের জন্য
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/ic_launcher.png"
+
+flutter_native_splash:
+  color: "#E91E8C"           # স্প্ল্যাশের ব্যাকগ্রাউন্ড কালার (থিম অনুযায়ী গোলাপি)
+  image: "assets/splash.png"  # স্প্ল্যাশ ইমেজ
+  android: true
+  ios: false
+  fill: true
 
 flutter:
   uses-material-design: true
