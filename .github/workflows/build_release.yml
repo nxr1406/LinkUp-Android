@@ -17,12 +17,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. Java 17 ───────────────────────────────────────────────
-      - name: Set up Java 17
+      # ── 2. Java 21 ───────────────────────────────────────────────
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       # ── 3. Flutter ───────────────────────────────────────────────
       - name: Set up Flutter
@@ -51,6 +51,14 @@ jobs:
       # ── 6. Dependencies ──────────────────────────────────────────
       - name: Get Flutter dependencies
         run: flutter pub get
+
+      # ── 6.1 Generate App Icons ───────────────────────────────────
+      - name: Generate App Icons
+        run: flutter pub run flutter_launcher_icons
+
+      # ── 6.2 Generate Splash ──────────────────────────────────────
+      - name: Generate Splash Screen
+        run: flutter pub run flutter_native_splash:create
 
       # ── 7. Analyze ───────────────────────────────────────────────
       - name: Analyze (warnings only)
