@@ -1,46 +1,46 @@
 plugins {
-    id "com.android.application"
-    id "kotlin-android"
-    id "dev.flutter.flutter-gradle-plugin"
-    id "com.google.gms.google-services"
+id "com.android.application"
+id "kotlin-android"
+id "dev.flutter.flutter-gradle-plugin"
+id "com.google.gms.google-services"
 }
 
 android {
-    namespace "com.nxr.linkup"
-    compileSdk flutter.compileSdkVersion
-    ndkVersion flutter.ndkVersion
+namespace "com.nxr.linkup"
+compileSdk 35
+ndkVersion flutter.ndkVersion
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
+compileOptions {
+sourceCompatibility JavaVersion.VERSION_1_8
+targetCompatibility JavaVersion.VERSION_1_8
+}
 
-    kotlinOptions {
-        jvmTarget = '1.8'
-    }
+kotlinOptions {
+jvmTarget = '1.8'
+}
 
-    defaultConfig {
-        applicationId "com.nxr.linkup"
-        minSdk 21
-        targetSdk flutter.targetSdkVersion
-        versionCode flutter.versionCode
-        versionName flutter.versionName
-        multiDexEnabled true
-    }
+defaultConfig {
+applicationId "com.nxr.linkup"
+minSdk 23
+targetSdk 35
+versionCode flutter.versionCode
+versionName flutter.versionName
+multiDexEnabled true
+}
 
-    buildTypes {
-        release {
-            signingConfig signingConfigs.debug
-            minifyEnabled false
-            shrinkResources false
-        }
-    }
+buildTypes {
+release {
+signingConfig signingConfigs.debug
+minifyEnabled false
+shrinkResources false
+}
+}
 }
 
 flutter {
-    source '../..'
+source '../..'
 }
 
 dependencies {
-    implementation platform('com.google.firebase:firebase-bom:33.0.0')
+implementation platform('com.google.firebase:firebase-bom:33.0.0')
 }
