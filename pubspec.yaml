@@ -35,7 +35,7 @@ dev_dependencies:
 # Launcher icon configuration
 flutter_icons:
   android: true
-  ios: true
+  ios: false
   image_path: "assets/ic_launcher.png"
 
 # Splash screen configuration
@@ -43,7 +43,7 @@ flutter_native_splash:
   color: "#E91E8C"           # background color
   image: "assets/splash.png"  # splash image
   android: true
-  ios: true
+  ios: false
   fill: true
 
 flutter:
