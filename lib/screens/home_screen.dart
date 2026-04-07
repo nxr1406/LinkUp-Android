@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:on_audio_query/on_audio_query.dart';
-import 'package:permission_handler/permission_handler.dart';
-import '../services/audio_player_service.dart';
-import 'now_playing_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/chat_model.dart';
+import '../models/user_model.dart';
+import '../services/chat_service.dart';
+import '../services/user_service.dart';
+import '../utils/app_colors.dart';
+import '../widgets/avatar_widget.dart';
+import 'chat_screen.dart';
+import 'search_screen.dart';
+import 'profile_screen.dart';
+import 'new_chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,494 +20,269 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final OnAudioQuery _audioQuery = OnAudioQuery();
-  final AudioPlayerService _playerService = AudioPlayerService();
-  List<SongModel> _songs = [];
-  bool _loading = true;
-  bool _permissionDenied = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Wait for first frame so context is fully ready
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _requestPermissionAndLoad();
-    });
-    // Listen to player changes to rebuild UI
-    _playerService.addListener(() {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _playerService.dispose();
-    super.dispose();
-  }
-
-  Future<void> _requestPermissionAndLoad() async {
-    // Android 13+ (API 33+) uses READ_MEDIA_AUDIO, older uses READ_EXTERNAL_STORAGE
-    // Permission.audio.isSupported doesn't exist — request directly and fallback
-    PermissionStatus status = await Permission.audio.request();
-    if (status == PermissionStatus.denied ||
-        status == PermissionStatus.permanentlyDenied) {
-      status = await Permission.storage.request();
-    }
-
-    if (status.isGranted) {
-      await _loadSongs();
-    } else {
-      setState(() {
-        _permissionDenied = true;
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _loadSongs() async {
-    final songs = await _audioQuery.querySongs(
-      sortType: SongSortType.TITLE,
-      orderType: OrderType.ASC_OR_SMALLER,
-      uriType: UriType.EXTERNAL,
-      ignoreCase: true,
-    );
-
-    // Filter: only real audio files, min 30 seconds
-    final filtered = songs
-        .where((s) =>
-            s.duration != null &&
-            s.duration! > 30000 &&
-            s.data != null &&
-            (s.data!.endsWith('.mp3') ||
-                s.data!.endsWith('.m4a') ||
-                s.data!.endsWith('.flac') ||
-                s.data!.endsWith('.wav') ||
-                s.data!.endsWith('.aac') ||
-                s.data!.endsWith('.ogg')))
-        .toList();
-
-    await _playerService.loadSongs(filtered);
-
-    setState(() {
-      _songs = filtered;
-      _loading = false;
-    });
-  }
-
-  String _formatDuration(int? ms) {
-    if (ms == null) return '0:00';
-    final mins = ms ~/ 60000;
-    final secs = (ms % 60000) ~/ 1000;
-    return '$mins:${secs.toString().padLeft(2, '0')}';
-  }
+  int _currentIndex = 0;
+  final _currentUser = FirebaseAuth.instance.currentUser!;
+  final _userService = UserService();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Stack(
-              children: [
-                Container(
-                  height: 110,
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF6BA3BE),
-                        Color(0xFF8BBDD4),
-                        Color(0xFFB5D4E2),
-                        Color(0xFFD4884A),
-                      ],
-                    ),
-                  ),
-                  child: Stack(children: [
-                    Positioned(
-                      top: -20, left: 30,
-                      child: Container(
-                        width: 100, height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                      ),
-                    ),
-                  ]),
+    return StreamBuilder<UserModel?>(
+      stream: _userService.userStream(_currentUser.uid),
+      builder: (context, snapshot) {
+        final me = snapshot.data;
+        return Scaffold(
+          backgroundColor: AppColors.white,
+          body: IndexedStack(
+            index: _currentIndex,
+            children: [
+              _ChatsTab(me: me),
+              const SearchScreen(),
+              ProfileScreen(me: me),
+            ],
+          ),
+          bottomNavigationBar: Container(
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+            ),
+            child: BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (i) => setState(() => _currentIndex = i),
+              selectedItemColor: AppColors.black,
+              unselectedItemColor: AppColors.grey,
+              backgroundColor: AppColors.white,
+              elevation: 0,
+              showSelectedLabels: false,
+              showUnselectedLabels: false,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.chat_bubble_outline, size: 26),
+                  activeIcon: Icon(Icons.chat_bubble, size: 26),
+                  label: 'Chats',
                 ),
-                Positioned(
-                  top: 0, left: 0, right: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                    child: Row(
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'MY MUSIC',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: _loadSongs,
-                          child: const Icon(Icons.refresh, color: Colors.white, size: 22),
-                        ),
-                      ],
-                    ),
-                  ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.search, size: 26),
+                  label: 'Search',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person_outline, size: 26),
+                  activeIcon: Icon(Icons.person, size: 26),
+                  label: 'Profile',
                 ),
               ],
             ),
+          ),
+        );
+      },
+    );
+  }
+}
 
-            // Song count
-            if (!_loading && !_permissionDenied)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Row(
-                  children: [
-                    Text(
-                      '${_songs.length} Songs',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () {
-                        if (_songs.isNotEmpty) {
-                          _playerService.toggleShuffle();
-                          _playerService.playSongAt(
-                            (DateTime.now().millisecond % _songs.length),
-                          );
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => NowPlayingScreen(
-                                playerService: _playerService,
-                                audioQuery: _audioQuery,
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFF8A50), Color(0xFFFF5722)],
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFFF6B35).withOpacity(0.35),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.shuffle, color: Colors.white, size: 16),
-                            SizedBox(width: 6),
-                            Text('Shuffle', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+class _ChatsTab extends StatelessWidget {
+  final UserModel? me;
+  const _ChatsTab({this.me});
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser!;
+    final chatService = ChatService();
+    final userService = UserService();
+
+    return Scaffold(
+      backgroundColor: AppColors.white,
+      appBar: AppBar(
+        backgroundColor: AppColors.white,
+        elevation: 0,
+        titleSpacing: 20,
+        title: Row(
+          children: [
+            Text(
+              me?.username ?? 'LinkUp',
+              style: const TextStyle(
+                color: AppColors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
               ),
-
-            // Content
-            Expanded(
-              child: _loading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: Color(0xFFFF6B35)),
-                    )
-                  : _permissionDenied
-                      ? _buildPermissionDenied()
-                      : _songs.isEmpty
-                          ? _buildEmpty()
-                          : ListView.builder(
-                              padding: const EdgeInsets.only(bottom: 100),
-                              itemCount: _songs.length,
-                              itemBuilder: (context, index) {
-                                final song = _songs[index];
-                                return _buildSongTile(song, index);
-                              },
-                            ),
             ),
+            if (me?.isVerified == true) ...[
+              const SizedBox(width: 4),
+              const Icon(Icons.verified, color: AppColors.verified, size: 18),
+            ],
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_square, color: AppColors.black, size: 24),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NewChatScreen()),
+            ),
+          ),
+        ],
       ),
-
-      // Mini player at bottom
-      bottomNavigationBar: ListenableBuilder(
-        listenable: _playerService,
-        builder: (context, _) {
-          if (_playerService.currentSong == null) return const SizedBox.shrink();
-          return _buildMiniPlayer();
+      body: StreamBuilder<List<ChatModel>>(
+        stream: chatService.getUserChats(currentUser.uid),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary));
+          }
+          final chats = snapshot.data ?? [];
+          if (chats.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.chat_bubble_outline,
+                      size: 64, color: Colors.grey.shade300),
+                  const SizedBox(height: 16),
+                  Text('No chats yet',
+                      style: TextStyle(
+                          color: Colors.grey.shade400, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  Text('Tap the edit icon to start chatting',
+                      style: TextStyle(
+                          color: Colors.grey.shade400, fontSize: 13)),
+                ],
+              ),
+            );
+          }
+          return ListView.builder(
+            itemCount: chats.length,
+            itemBuilder: (context, index) {
+              final chat = chats[index];
+              final otherUid = chat.participants
+                  .firstWhere((id) => id != currentUser.uid, orElse: () => '');
+              return FutureBuilder<UserModel?>(
+                future: userService.getUser(otherUid),
+                builder: (context, userSnap) {
+                  final other = userSnap.data;
+                  final unread = chat.unreadCount[currentUser.uid] ?? 0;
+                  return _ChatTile(
+                    chat: chat,
+                    other: other,
+                    currentUid: currentUser.uid,
+                    unreadCount: unread,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatScreen(
+                          chatId: chat.id,
+                          otherUser: other,
+                          currentUid: currentUser.uid,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          );
         },
       ),
     );
   }
+}
 
-  Widget _buildSongTile(SongModel song, int index) {
-    return ListenableBuilder(
-      listenable: _playerService,
-      builder: (context, _) {
-        final isPlaying = _playerService.currentIndex == index && _playerService.isPlaying;
-        final isCurrent = _playerService.currentIndex == index;
+class _ChatTile extends StatelessWidget {
+  final ChatModel chat;
+  final UserModel? other;
+  final String currentUid;
+  final int unreadCount;
+  final VoidCallback onTap;
 
-        return GestureDetector(
-          onTap: () async {
-            await _playerService.playSongAt(index);
-            if (context.mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => NowPlayingScreen(
-                    playerService: _playerService,
-                    audioQuery: _audioQuery,
-                  ),
-                ),
-              );
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
-            color: Colors.transparent,
+  const _ChatTile({
+    required this.chat,
+    required this.other,
+    required this.currentUid,
+    required this.unreadCount,
+    required this.onTap,
+  });
+
+  String _formatTime(DateTime? time) {
+    if (time == null) return '';
+    final now = DateTime.now();
+    final diff = now.difference(time);
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    if (diff.inDays < 7) return '${diff.inDays}d';
+    return '${time.day}/${time.month}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isMe = chat.lastMessageSenderId == currentUid;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: AvatarWidget(user: other, radius: 26),
+      title: Row(
+        children: [
+          Expanded(
             child: Row(
               children: [
-                // Album art
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: QueryArtworkWidget(
-                    id: song.id,
-                    type: ArtworkType.AUDIO,
-                    artworkWidth: 52,
-                    artworkHeight: 52,
-                    artworkBorder: BorderRadius.circular(8),
-                    nullArtworkWidget: Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: Colors.primaries[index % Colors.primaries.length].withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.music_note, color: Colors.white, size: 26),
+                Flexible(
+                  child: Text(
+                    other?.username ?? '...',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: AppColors.black,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        song.title,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isCurrent ? const Color(0xFFFF6B35) : const Color(0xFF1A1A1A),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        song.artist ?? 'Unknown Artist',
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  _formatDuration(song.duration),
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)),
-                ),
-                const SizedBox(width: 10),
-                if (isPlaying)
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFFF6B35),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.equalizer, color: Colors.white, size: 16),
-                  )
-                else
-                  Icon(Icons.more_vert, color: Colors.grey.shade400, size: 18),
+                if (other?.isVerified == true) ...[
+                  const SizedBox(width: 3),
+                  const Icon(Icons.verified,
+                      color: AppColors.verified, size: 14),
+                ],
               ],
             ),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMiniPlayer() {
-    final song = _playerService.currentSong!;
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => NowPlayingScreen(
-              playerService: _playerService,
-              audioQuery: _audioQuery,
-            ),
+          Text(
+            _formatTime(chat.lastMessageTime),
+            style: const TextStyle(
+                color: AppColors.grey, fontSize: 12),
           ),
-        );
-      },
-      child: Container(
-        height: 68,
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: QueryArtworkWidget(
-                id: song.id,
-                type: ArtworkType.AUDIO,
-                artworkWidth: 44,
-                artworkHeight: 44,
-                artworkBorder: BorderRadius.circular(8),
-                nullArtworkWidget: Container(
-                  width: 44, height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF6B35).withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.music_note, color: Colors.white, size: 22),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    song.title,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    song.artist ?? 'Unknown',
-                    style: const TextStyle(color: Colors.white54, fontSize: 11),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              onPressed: _playerService.previous,
-              icon: const Icon(Icons.skip_previous, color: Colors.white, size: 24),
-            ),
-            GestureDetector(
-              onTap: _playerService.togglePlay,
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFF6B35),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  _playerService.isPlaying ? Icons.pause : Icons.play_arrow,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: _playerService.next,
-              icon: const Icon(Icons.skip_next, color: Colors.white, size: 24),
-            ),
-            const SizedBox(width: 4),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPermissionDenied() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.lock_outline, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            const Text('Storage Permission Required',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 8),
-            Text('Please allow storage access to load your music.',
-                style: TextStyle(color: Colors.grey.shade600),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () async {
-                await openAppSettings();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF6B35),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Open Settings'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.music_off, size: 64, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          Text('No songs found', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.grey.shade600)),
-          const SizedBox(height: 8),
-          Text('Add audio files to your device storage.',
-              style: TextStyle(color: Colors.grey.shade500)),
         ],
       ),
+      subtitle: Row(
+        children: [
+          if (isMe)
+            const Text('You: ',
+                style: TextStyle(color: AppColors.grey, fontSize: 13)),
+          Expanded(
+            child: Text(
+              chat.lastMessage ?? '',
+              style: TextStyle(
+                color: unreadCount > 0 ? AppColors.black : AppColors.grey,
+                fontSize: 13,
+                fontWeight: unreadCount > 0
+                    ? FontWeight.w500
+                    : FontWeight.normal,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (unreadCount > 0)
+            Container(
+              margin: const EdgeInsets.only(left: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                unreadCount > 99 ? '99+' : '$unreadCount',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+        ],
+      ),
+      onTap: onTap,
     );
   }
 }

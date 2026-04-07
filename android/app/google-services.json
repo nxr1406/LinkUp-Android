@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1030175932136",
+    "firebase_url": "https://linkup-c22fa-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "linkup-c22fa",
+    "storage_bucket": "linkup-c22fa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1030175932136:android:2d6e3c873e726ad05a535d",
+        "android_client_info": {
+          "package_name": "com.nxr.linkup"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGMnVNU7G-59HsxXY0bM_kdRxmpgOx5Bs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

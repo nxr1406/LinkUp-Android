@@ -1,100 +1,78 @@
-# Music Player - Flutter
+# LinkUp 💬
 
-## GitHub Actions দিয়ে Release APK Build করার নিয়ম
-
-### ধাপ ১ — Keystore তৈরি করো (একবারই করতে হবে)
-
-```bash
-keytool -genkey -v \
-  -keystore my-release-key.jks \
-  -keyalg RSA \
-  -keysize 2048 \
-  -validity 10000 \
-  -alias my-key-alias
-```
-
-তুমি যে password দেবে সেটা মনে রেখো।
+A real-time chat app built with Flutter + Firebase Firestore by **RI Nirob Sarkar (@nxrdev)**.
 
 ---
 
-### ধাপ ২ — Keystore কে Base64 করো
+## Features
 
-**Linux/Mac:**
-```bash
-base64 -i my-release-key.jks | tr -d '\n'
-```
-
-**Windows (PowerShell):**
-```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("my-release-key.jks"))
-```
-
-এই output টা copy করে রাখো।
+- 🔐 Email/password authentication
+- 💬 Real-time text messaging (Firestore)
+- 👤 User profiles with WebP-compressed avatar (stored in Firestore, no Storage)
+- ✅ Verified badge system (request + admin review)
+- 🛡️ Admin panel (manage users, verifications, suspension appeals)
+- 🚫 Account suspension + appeal system
+- 🔍 User search by username
+- 📱 Pink blob UI design (matching Figma concept)
 
 ---
 
-### ধাপ ৩ — GitHub Secrets সেট করো
+## Setup
 
-GitHub রেপোতে যাও → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
+### 1. Clone the repo
+```bash
+git clone https://github.com/YOUR_USERNAME/linkup.git
+cd linkup
+flutter pub get
+```
 
-নিচের ৪টা secret যোগ করো:
+### 2. Firebase Setup
+- The `android/app/google-services.json` is included for the `com.nxr.linkup` package.
+- In Firebase Console → Firestore → deploy `firestore.rules` and `firestore.indexes.json`.
 
-| Secret Name | মান |
+### 3. Run locally
+```bash
+flutter run
+```
+
+---
+
+## GitHub Actions — Build APK
+
+### Add Secret
+1. Go to **Settings → Secrets → Actions → New repository secret**
+2. Name: `GOOGLE_SERVICES_JSON`
+3. Value: paste the entire contents of your `google-services.json`
+
+### Trigger a build
+- Push to `main`/`master` → uploads APK as artifact
+- Push a tag like `v1.0.0` → creates a GitHub Release with APK attached
+
+---
+
+## Firestore Collections
+
+| Collection | Description |
 |---|---|
-| `KEYSTORE_BASE64` | ধাপ ২-এর Base64 output |
-| `STORE_PASSWORD` | keystore বানানোর সময় দেওয়া password |
-| `KEY_PASSWORD` | key-এর password (সাধারণত একই) |
-| `KEY_ALIAS` | `my-key-alias` (তুমি যেটা দিয়েছিলে) |
+| `users` | User profiles (photoBase64, isVerified, isAdmin, etc.) |
+| `chats` | Chat metadata (participants, lastMessage, unreadCount) |
+| `chats/{id}/messages` | Individual messages |
+| `verification_requests` | Verification requests |
+| `suspension_appeals` | Suspension appeal requests |
 
 ---
 
-### ধাপ ৪ — Push করো
+## Tech Stack
 
-```bash
-git add .
-git commit -m "Add release build workflow"
-git push origin main
-```
-
-GitHub Actions অটো চালু হবে।
+- **Flutter** 3.24+
+- **Firebase Auth** — email/password
+- **Cloud Firestore** — all data including images as base64
+- **image** package — WebP/JPEG compression before storing
 
 ---
 
-### ✅ APK কোথায় পাবে
+## Notes
 
-**Actions** ট্যাব → সেই workflow run → নিচে **Artifacts**:
-
-- `release-apk-armeabi-v7a` → পুরনো ARM ফোনের জন্য
-- `release-apk-arm64-v8a` → নতুন 64-bit ফোনের জন্য
-
----
-
-### ফাইল স্ট্রাকচার
-
-```
-music_player/
-├── .github/
-│   └── workflows/
-│       └── build_apk.yml       ← CI/CD workflow
-├── android/
-│   ├── app/
-│   │   ├── build.gradle        ← signing config + ABI splits
-│   │   └── src/main/
-│   │       ├── AndroidManifest.xml
-│   │       ├── kotlin/.../MainActivity.kt
-│   │       └── res/
-│   ├── build.gradle
-│   ├── settings.gradle
-│   ├── gradle.properties
-│   └── gradle/wrapper/
-│       └── gradle-wrapper.properties
-├── lib/
-│   ├── main.dart
-│   ├── screens/
-│   │   ├── queue_screen.dart
-│   │   ├── now_playing_screen.dart
-│   │   └── album_screen.dart
-│   └── models/
-│       └── song_data.dart
-└── pubspec.yaml
-```
+- No Firebase Storage used — all images stored as base64 JPEG in Firestore (compressed to ~256×256, quality 60)
+- Camera/mic buttons in chat UI are decorative only (text-only chat)
+- Only profile picture upload is functional

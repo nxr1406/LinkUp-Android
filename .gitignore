@@ -1,4 +1,4 @@
-# Flutter/Dart
+# Flutter / Dart
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -6,22 +6,34 @@
 .pub-cache/
 .pub/
 build/
-*.iml
+pubspec.lock
 
 # Android
-android/app/keystore.jks
-android/key.properties
+android/local.properties
 android/.gradle
 android/captures/
-android/local.properties
-android/GeneratedPluginRegistrant.java
+android/gradlew
+android/gradlew.bat
+android/gradle/wrapper/gradle-wrapper.jar
+*.apk
+*.aab
+
+# Keys / secrets
+*.jks
+*.keystore
+key.properties
 
 # IDE
 .idea/
+*.iml
+*.ipr
+*.iws
 .vscode/
 *.swp
-*.swo
 
 # OS
 .DS_Store
 Thumbs.db
+
+# NOTE: google-services.json IS committed here (public project)
+# In production, add it via GitHub Secret and .gitignore it.

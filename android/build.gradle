@@ -1,12 +1,14 @@
 buildscript {
-    ext.kotlin_version = '1.9.0'
+    ext.kotlin_version = '1.9.10'
     repositories {
         google()
         mavenCentral()
     }
+
     dependencies {
         classpath 'com.android.tools.build:gradle:8.1.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.google.gms:google-services:4.4.2'
     }
 }
 
@@ -18,34 +20,11 @@ allprojects {
 }
 
 rootProject.buildDir = '../build'
-
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
-
 subprojects {
     project.evaluationDependsOn(':app')
-}
-
-// Fix for on_audio_query_android: inject missing namespace required by AGP 8+
-// and force Java/Kotlin JVM target to 17 to match the build environment
-subprojects { subproject ->
-    if (subproject.name == "on_audio_query_android") {
-        subproject.afterEvaluate {
-            if (subproject.hasProperty("android")) {
-                subproject.android.namespace = "com.lucasjosino.on_audio_query"
-                subproject.android.compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_17
-                    targetCompatibility JavaVersion.VERSION_17
-                }
-            }
-            subproject.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-                kotlinOptions {
-                    jvmTarget = "17"
-                }
-            }
-        }
-    }
 }
 
 tasks.register("clean", Delete) {
