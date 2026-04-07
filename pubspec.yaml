@@ -44,7 +44,6 @@ flutter_native_splash:
   image: "assets/splash.png"  # splash image
   android: true
   ios: false
-  fill: true
 
 flutter:
   uses-material-design: true
