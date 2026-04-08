@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'utils/theme_provider.dart';
@@ -15,7 +16,6 @@ void main() async {
 class LinkUpApp extends StatefulWidget {
   const LinkUpApp({super.key});
 
-  // Global access to toggle theme from anywhere
   static _LinkUpAppState? _instance;
   static void toggleTheme() => _instance?.toggleTheme();
   static bool get isDark => _instance?._themeProvider.isDark ?? false;
@@ -41,7 +41,6 @@ class _LinkUpAppState extends State<LinkUpApp> {
   }
 
   void _onThemeChange() => setState(() {});
-
   void toggleTheme() => _themeProvider.toggle();
 
   @override
@@ -57,20 +56,36 @@ class _LinkUpAppState extends State<LinkUpApp> {
   }
 }
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
+        // Still connecting
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SplashScreen();
         }
+
+        // Authenticated → Home
         if (snapshot.hasData && snapshot.data != null) {
+          // Reset status bar to light for home screen
+          SystemChrome.setSystemUIOverlayStyle(
+            LinkUpApp.isDark
+                ? SystemUiOverlayStyle.light
+                : SystemUiOverlayStyle.dark,
+          );
           return const HomeScreen();
         }
+
+        // Not authenticated → Get Started
         return const GetStartedScreen();
       },
     );

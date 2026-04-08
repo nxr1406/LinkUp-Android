@@ -14,7 +14,6 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _displayNameCtrl;
   late final TextEditingController _usernameCtrl;
-  late final TextEditingController _bioCtrl;
   bool _loading = false;
   final _userService = UserService();
 
@@ -23,14 +22,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     _displayNameCtrl = TextEditingController(text: widget.me.displayName);
     _usernameCtrl = TextEditingController(text: widget.me.username);
-    _bioCtrl = TextEditingController(text: widget.me.bio ?? '');
   }
 
   @override
   void dispose() {
     _displayNameCtrl.dispose();
     _usernameCtrl.dispose();
-    _bioCtrl.dispose();
     super.dispose();
   }
 
@@ -47,7 +44,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         uid: widget.me.uid,
         displayName: _displayNameCtrl.text.trim(),
         username: _usernameCtrl.text.trim(),
-        bio: _bioCtrl.text.trim(),
       );
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -106,17 +102,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               'Username can only contain letters, numbers, and underscores.',
               style: TextStyle(color: AppColors.grey, fontSize: 12),
             ),
-            const SizedBox(height: 16),
-            _buildField(
-                controller: _bioCtrl,
-                label: 'Bio',
-                icon: Icons.notes_outlined,
-                maxLines: 3),
-            const SizedBox(height: 8),
-            const Text(
-              'Write a short bio about yourself.',
-              style: TextStyle(color: AppColors.grey, fontSize: 12),
-            ),
             if (_loading) ...[
               const SizedBox(height: 24),
               const CircularProgressIndicator(color: AppColors.primary),
@@ -131,7 +116,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
-    int maxLines = 1,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -141,7 +125,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ),
       child: TextField(
         controller: controller,
-        maxLines: maxLines,
         style: const TextStyle(color: AppColors.textDark),
         decoration: InputDecoration(
           labelText: label,

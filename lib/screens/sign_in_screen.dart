@@ -52,7 +52,7 @@ class _SignInScreenState extends State<SignInScreen> {
         msg = 'No internet connection';
       } else if (msg.contains('too-many-requests')) {
         msg = 'Too many attempts. Try again later';
-      } else if (msg.contains('suspended')) {
+      } else if (msg.contains('SUSPENDED') || msg.contains('suspended')) {
         msg = 'Your account has been suspended';
       } else {
         msg = 'Sign in failed. Check your credentials';

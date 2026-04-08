@@ -11,6 +11,9 @@ import '../widgets/avatar_widget.dart';
 import 'admin_screen.dart';
 import 'verification_request_screen.dart';
 import 'edit_profile_screen.dart';
+import 'notification_settings_screen.dart';
+import 'privacy_screen.dart';
+import 'blocked_accounts_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserModel? me;
@@ -35,7 +38,8 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
         titleSpacing: 16,
         title: Row(children: [
-          Icon(Icons.lock_outline, color: AppColors.textPrimary(dark), size: 18),
+          Icon(Icons.lock_outline,
+              color: AppColors.textPrimary(dark), size: 18),
           const SizedBox(width: 6),
           Text(me!.username,
               style: TextStyle(
@@ -46,64 +50,67 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(width: 4),
             const Icon(Icons.verified, color: AppColors.verified, size: 18),
           ],
+          if (me!.isAdmin) ...[
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.verified.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text('Admin',
+                  style: TextStyle(
+                      color: AppColors.verified,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold)),
+            ),
+          ],
         ]),
         actions: [
           IconButton(
-            icon: Icon(Icons.add, color: AppColors.textPrimary(dark), size: 26),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: Icon(Icons.menu, color: AppColors.textPrimary(dark), size: 26),
+            icon: Icon(Icons.menu,
+                color: AppColors.textPrimary(dark), size: 26),
             onPressed: () => _showSettings(context, dark),
           ),
         ],
       ),
       body: SingleChildScrollView(
         child: Column(children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           _AvatarEditor(me: me!),
           const SizedBox(height: 16),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text(me!.displayName,
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary(dark))),
-            if (me!.isVerified) ...[
-              const SizedBox(width: 4),
-              const Icon(Icons.verified, color: AppColors.verified, size: 20),
-            ],
-          ]),
-          const SizedBox(height: 2),
+          Text(me!.displayName,
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary(dark))),
+          const SizedBox(height: 4),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Text('@${me!.username}',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary(dark))),
+                style: TextStyle(
+                    fontSize: 14, color: AppColors.textSecondary(dark))),
+            if (me!.isVerified) ...[
+              const SizedBox(width: 4),
+              const Icon(Icons.verified, color: AppColors.verified, size: 16),
+            ],
           ]),
           const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(me!.email,
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary(dark)),
-                textAlign: TextAlign.center),
-          ),
-          if (me!.bio != null && me!.bio!.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(me!.bio!,
-                  style: TextStyle(fontSize: 14, color: AppColors.textPrimary(dark)),
-                  textAlign: TextAlign.center),
-            ),
-          ],
-          const SizedBox(height: 20),
+          Text(me!.email,
+              style: TextStyle(
+                  fontSize: 13, color: AppColors.textSecondary(dark))),
+          const SizedBox(height: 24),
+          // Stats row
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             _StatItem(label: 'FOLLOWERS', value: '—', dark: dark),
-            Container(width: 1, height: 30,
+            Container(
+                width: 1,
+                height: 30,
                 color: AppColors.divider(dark),
                 margin: const EdgeInsets.symmetric(horizontal: 24)),
             _StatItem(label: 'FOLLOWING', value: '—', dark: dark),
           ]),
           const SizedBox(height: 20),
+          // Buttons
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(children: [
@@ -111,11 +118,14 @@ class ProfileScreen extends StatelessWidget {
                 child: SizedBox(
                   height: 42,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => EditProfileScreen(me: me!))),
+                    onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => EditProfileScreen(me: me!))),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.textPrimary(dark),
-                      foregroundColor: dark ? AppColors.darkBackground : Colors.white,
+                      foregroundColor:
+                          dark ? AppColors.darkBackground : Colors.white,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
                       elevation: 0,
@@ -155,7 +165,7 @@ class ProfileScreen extends StatelessWidget {
       context: context,
       backgroundColor: AppColors.cardBg(dark),
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       isScrollControlled: true,
       builder: (_) => _SettingsSheet(me: me!),
     );
@@ -174,10 +184,9 @@ class _AvatarEditor extends StatefulWidget {
 class _AvatarEditorState extends State<_AvatarEditor> {
   bool _uploading = false;
 
-  Future<void> _pickAndUpload() async {
-    final picker = ImagePicker();
-    final picked =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+  Future<void> _pick() async {
+    final picked = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (picked == null) return;
     setState(() => _uploading = true);
     try {
@@ -202,16 +211,18 @@ class _AvatarEditorState extends State<_AvatarEditor> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _pickAndUpload,
+      onTap: _pick,
       child: Stack(alignment: Alignment.bottomRight, children: [
         _uploading
             ? const CircleAvatar(
                 radius: 48,
                 backgroundColor: Colors.grey,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                child: CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2))
             : AvatarWidget(user: widget.me, radius: 48),
         Container(
-          width: 28, height: 28,
+          width: 28,
+          height: 28,
           decoration: BoxDecoration(
               color: AppColors.primary,
               shape: BoxShape.circle,
@@ -223,11 +234,11 @@ class _AvatarEditorState extends State<_AvatarEditor> {
   }
 }
 
-// ── Stat item ─────────────────────────────────────────────────────────────────
 class _StatItem extends StatelessWidget {
   final String label, value;
   final bool dark;
-  const _StatItem({required this.label, required this.value, required this.dark});
+  const _StatItem(
+      {required this.label, required this.value, required this.dark});
 
   @override
   Widget build(BuildContext context) {
@@ -262,13 +273,12 @@ class _SettingsSheetState extends State<_SettingsSheet> {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = AppColors.textPrimary(dark);
-    final subColor = AppColors.textSecondary(dark);
+    final tc = AppColors.textPrimary(dark);
 
     return SafeArea(
       child: SingleChildScrollView(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          // Handle bar
+          // Handle
           Container(
             width: 40, height: 4,
             margin: const EdgeInsets.only(top: 12, bottom: 8),
@@ -282,22 +292,34 @@ class _SettingsSheetState extends State<_SettingsSheet> {
                 style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: textColor)),
+                    color: tc)),
           ),
 
-          // ── Normal settings ──────────────────────────────────
-          _Tile(icon: Icons.notifications_outlined, label: 'Notifications',
-              dark: dark, onTap: () {}),
-          _Tile(icon: Icons.lock_outline, label: 'Privacy',
-              dark: dark, onTap: () {}),
-          _Tile(icon: Icons.block, label: 'Blocked accounts',
-              dark: dark, onTap: () {}),
+          // ── General ─────────────────────────────────────────
+          _T(icon: Icons.notifications_outlined, label: 'Notifications',
+              dark: dark, onTap: () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(
+                builder: (_) => const NotificationSettingsScreen()));
+          }),
+          _T(icon: Icons.security_outlined, label: 'Privacy Policy',
+              dark: dark, onTap: () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(
+                builder: (_) => const PrivacyScreen()));
+          }),
+          _T(icon: Icons.block, label: 'Blocked Accounts', dark: dark,
+              onTap: () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(
+                builder: (_) => const BlockedAccountsScreen()));
+          }),
 
           // Dark mode toggle
           ListTile(
-            leading: Icon(Icons.dark_mode_outlined, color: textColor, size: 22),
+            leading: Icon(Icons.dark_mode_outlined, color: tc, size: 22),
             title: Text('Dark Mode',
-                style: TextStyle(color: textColor, fontSize: 15)),
+                style: TextStyle(color: tc, fontSize: 15)),
             trailing: Switch(
               value: _darkMode,
               onChanged: (v) {
@@ -308,186 +330,118 @@ class _SettingsSheetState extends State<_SettingsSheet> {
             ),
           ),
 
-          _Tile(icon: Icons.key_outlined, label: 'Change Password',
-              dark: dark, onTap: () => _changePasswordDialog(context)),
+          _T(icon: Icons.key_outlined, label: 'Change Password',
+              dark: dark, onTap: () => _changePassword(context, dark)),
 
-          _Tile(icon: Icons.verified_outlined, label: 'Request Verification',
-              dark: dark,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            VerificationRequestScreen(me: widget.me)));
-              }),
+          _T(icon: Icons.verified_outlined, label: 'Request Verification',
+              dark: dark, onTap: () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(
+                builder: (_) => VerificationRequestScreen(me: widget.me)));
+          }),
 
-          // ── Admin-only section ────────────────────────────────
+          // ── Admin-only panel ─────────────────────────────────
           if (widget.me.isAdmin) ...[
             Divider(height: 1, color: AppColors.divider(dark)),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: Row(children: [
-                Icon(Icons.admin_panel_settings,
+                const Icon(Icons.admin_panel_settings,
                     color: AppColors.verified, size: 16),
                 const SizedBox(width: 6),
-                Text('Admin Panel',
-                    style: TextStyle(
+                Text('ADMIN PANEL',
+                    style: const TextStyle(
                         color: AppColors.verified,
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 0.8)),
+                        letterSpacing: 1.0)),
               ]),
             ),
-            _Tile(
-              icon: Icons.shield_outlined,
-              label: 'Review Verifications',
-              color: AppColors.verified,
-              dark: dark,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const AdminScreen(tab: 0)));
-              },
-            ),
-            _Tile(
-              icon: Icons.gavel_outlined,
-              label: 'Suspension Appeals',
-              color: AppColors.verified,
-              dark: dark,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const AdminScreen(tab: 1)));
-              },
-            ),
-            _Tile(
-              icon: Icons.manage_accounts_outlined,
-              label: 'Manage Users',
-              color: AppColors.verified,
-              dark: dark,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const AdminScreen(tab: 2)));
-              },
-            ),
-            Divider(height: 1, color: AppColors.divider(dark)),
+            _T(icon: Icons.shield_outlined,
+                label: 'Review Verifications',
+                color: AppColors.verified,
+                dark: dark, onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => const AdminScreen(tab: 0)));
+            }),
+            _T(icon: Icons.gavel_outlined,
+                label: 'Suspension Appeals',
+                color: AppColors.verified,
+                dark: dark, onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => const AdminScreen(tab: 1)));
+            }),
+            _T(icon: Icons.manage_accounts_outlined,
+                label: 'Manage Users',
+                color: AppColors.verified,
+                dark: dark, onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => const AdminScreen(tab: 2)));
+            }),
           ],
-
-          // ── Danger zone ──────────────────────────────────────
-          if (!widget.me.isAdmin)
-            Divider(height: 1, color: AppColors.divider(dark)),
-
-          _Tile(icon: Icons.download_outlined, label: 'Export Data',
-              dark: dark, onTap: () {}),
 
           Divider(height: 1, color: AppColors.divider(dark)),
 
-          _Tile(
-            icon: Icons.logout,
-            label: 'Log out',
-            color: Colors.red,
-            dark: dark,
-            onTap: () async {
-              Navigator.pop(context);
-              await AuthService().signOut();
-            },
-          ),
-          _Tile(
-            icon: Icons.delete_outline,
-            label: 'Delete Account',
-            color: Colors.red,
-            dark: dark,
-            onTap: () => _deleteAccountDialog(context),
-          ),
+          _T(icon: Icons.logout, label: 'Log out',
+              color: Colors.red, dark: dark, onTap: () async {
+            Navigator.pop(context);
+            await AuthService().signOut();
+          }),
+          _T(icon: Icons.delete_outline, label: 'Delete Account',
+              color: Colors.red, dark: dark,
+              onTap: () => _deleteAccount(context, dark)),
           const SizedBox(height: 12),
         ]),
       ),
     );
   }
 
-  void _changePasswordDialog(BuildContext context) {
-    Navigator.pop(context);
-    final currentCtrl = TextEditingController();
-    final newCtrl = TextEditingController();
-    final dark = LinkUpApp.isDark;
+  void _changePassword(BuildContext ctx, bool dark) {
+    Navigator.pop(ctx);
+    final ctrl = TextEditingController();
     showDialog(
-      context: context,
+      context: ctx,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.cardBg(dark),
         title: Text('Change Password',
             style: TextStyle(color: AppColors.textPrimary(dark))),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
-            controller: currentCtrl,
-            obscureText: true,
-            style: TextStyle(color: AppColors.textPrimary(dark)),
-            decoration: InputDecoration(
-              hintText: 'Current password',
-              hintStyle: TextStyle(color: AppColors.textSecondary(dark)),
-              filled: true,
-              fillColor: AppColors.inputFill(dark),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-            ),
+        content: TextField(
+          controller: ctrl,
+          obscureText: true,
+          style: TextStyle(color: AppColors.textPrimary(dark)),
+          decoration: InputDecoration(
+            hintText: 'New password (min 6 chars)',
+            hintStyle:
+                TextStyle(color: AppColors.textSecondary(dark)),
+            filled: true,
+            fillColor: AppColors.inputFill(dark),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10)),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: newCtrl,
-            obscureText: true,
-            style: TextStyle(color: AppColors.textPrimary(dark)),
-            decoration: InputDecoration(
-              hintText: 'New password (min 6 chars)',
-              hintStyle: TextStyle(color: AppColors.textSecondary(dark)),
-              filled: true,
-              fillColor: AppColors.inputFill(dark),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          ),
-        ]),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(_),
               child: const Text('Cancel')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary),
             onPressed: () async {
-              if (currentCtrl.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Enter your current password'),
-                    backgroundColor: Colors.red));
-                return;
-              }
-              if (newCtrl.text.length < 6) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('New password must be at least 6 characters'),
-                    backgroundColor: Colors.red));
-                return;
-              }
+              if (ctrl.text.length < 6) return;
               try {
-                final user = FirebaseAuth.instance.currentUser!;
-                final credential = EmailAuthProvider.credential(
-                  email: user.email!,
-                  password: currentCtrl.text,
-                );
-                // Re-authenticate with current password
-                await user.reauthenticateWithCredential(credential);
-                // Now update to new password
-                await user.updatePassword(newCtrl.text);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                await FirebaseAuth.instance.currentUser!
+                    .updatePassword(ctrl.text);
+                Navigator.pop(_);
+                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
                     content: Text('Password updated!'),
                     backgroundColor: Colors.green));
-              } on FirebaseAuthException catch (e) {
-                String msg = 'Error updating password';
-                if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
-                  msg = 'Current password is incorrect';
-                }
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(msg), backgroundColor: Colors.red));
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('$e'), backgroundColor: Colors.red));
+                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                    content: Text('$e'),
+                    backgroundColor: Colors.red));
               }
             },
             child: const Text('Update',
@@ -498,33 +452,35 @@ class _SettingsSheetState extends State<_SettingsSheet> {
     );
   }
 
-  void _deleteAccountDialog(BuildContext context) {
-    Navigator.pop(context);
-    final dark = LinkUpApp.isDark;
+  void _deleteAccount(BuildContext ctx, bool dark) {
+    Navigator.pop(ctx);
     showDialog(
-      context: context,
+      context: ctx,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.cardBg(dark),
         title: Text('Delete Account',
             style: TextStyle(color: AppColors.textPrimary(dark))),
-        content: Text(
-            'This will permanently delete your account and all data.',
-            style: TextStyle(color: AppColors.textSecondary(dark))),
+        content: Text('Permanently deletes your account & all data.',
+            style:
+                TextStyle(color: AppColors.textSecondary(dark))),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(_),
               child: const Text('Cancel')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red),
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(_);
               try {
-                final uid = FirebaseAuth.instance.currentUser!.uid;
+                final uid =
+                    FirebaseAuth.instance.currentUser!.uid;
                 await UserService().deleteUserData(uid);
                 await FirebaseAuth.instance.currentUser!.delete();
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('$e'), backgroundColor: Colors.red));
+                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                    content: Text('$e'),
+                    backgroundColor: Colors.red));
               }
             },
             child: const Text('Delete',
@@ -536,15 +492,14 @@ class _SettingsSheetState extends State<_SettingsSheet> {
   }
 }
 
-// ── Reusable settings tile ────────────────────────────────────────────────────
-class _Tile extends StatelessWidget {
+class _T extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color? color;
   final bool dark;
   final VoidCallback? onTap;
 
-  const _Tile({
+  const _T({
     required this.icon,
     required this.label,
     required this.dark,

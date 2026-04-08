@@ -5,7 +5,7 @@ class AppColors {
   static const Color primary      = Color(0xFFE91E8C);
   static const Color primaryLight = Color(0xFFF06292);
   static const Color primaryDark  = Color(0xFFC2185B);
-  static const Color verified     = Color(0xFFE91E8C);
+  static const Color verified     = Color(0xFF1E88E5);
   static const Color messageBubble = Color(0xFF1E88E5);
 
   // ── Light theme ────────────────────────────────────────────────
@@ -17,16 +17,16 @@ class AppColors {
   static const Color textDark     = Color(0xFF212121);
   static const Color textMedium   = Color(0xFF757575);
 
-  // ── Dark theme (AMOLED) ────────────────────────────────────────
-  static const Color darkBackground   = Color(0xFF000000);
-  static const Color darkSurface      = Color(0xFF000000);
-  static const Color darkCard         = Color(0xFF0D0D0D);
-  static const Color darkAppBar       = Color(0xFF000000);
+  // ── Dark theme ─────────────────────────────────────────────────
+  static const Color darkBackground   = Color(0xFF0F0F14);
+  static const Color darkSurface      = Color(0xFF1A1A2E);
+  static const Color darkCard         = Color(0xFF232338);
+  static const Color darkAppBar       = Color(0xFF1A1A2E);
   static const Color darkText         = Color(0xFFF0F0F0);
   static const Color darkTextMedium   = Color(0xFFAAAAAA);
-  static const Color darkDivider      = Color(0xFF1A1A1A);
-  static const Color darkInputFill    = Color(0xFF0D0D0D);
-  static const Color darkBubbleOther  = Color(0xFF1A1A1A);
+  static const Color darkDivider      = Color(0xFF2E2E45);
+  static const Color darkInputFill    = Color(0xFF232338);
+  static const Color darkBubbleOther  = Color(0xFF2A2A45);
 
   // ── Gradient ───────────────────────────────────────────────────
   static const List<Color> pinkGradient = [

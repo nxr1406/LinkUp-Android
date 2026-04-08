@@ -25,25 +25,16 @@ dependencies:
   uuid: ^4.5.1
   shared_preferences: ^2.3.3
 
+  # WebView for Privacy Policy HTML
+  flutter_inappwebview: ^6.1.5
+
+  # Notifications
+  flutter_local_notifications: ^17.2.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  flutter_launcher_icons: ^0.14.4   # ✅ updated to support image ^4.x
-  flutter_native_splash: ^2.3.2      # ✅ splash screen
-
-# Launcher icon configuration
-flutter_icons:
-  android: true
-  ios: false
-  image_path: "assets/ic_launcher.png"
-
-# Splash screen configuration
-flutter_native_splash:
-  color: "#E91E8C"           # background color
-  image: "assets/splash.png"  # splash image
-  android: true
-  ios: false
 
 flutter:
   uses-material-design: true

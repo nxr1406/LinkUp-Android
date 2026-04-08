@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Privacy Policy – LinkUp</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fff;
+      color: #212121;
+      padding: 24px 20px 48px;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+    h1 { font-size: 22px; font-weight: 700; color: #E91E8C; margin-bottom: 4px; }
+    .updated { font-size: 12px; color: #9E9E9E; margin-bottom: 28px; }
+    h2 { font-size: 16px; font-weight: 600; color: #1A1A2E; margin: 24px 0 8px; }
+    p, li { color: #424242; margin-bottom: 8px; }
+    ul { padding-left: 20px; }
+    a { color: #E91E8C; text-decoration: none; }
+    hr { border: none; border-top: 1px solid #EEE; margin: 28px 0; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: April 2026</p>
+
+  <p>Welcome to <strong>LinkUp</strong>. This Privacy Policy explains how we collect, use, and protect your information when you use our application.</p>
+
+  <h2>1. Information We Collect</h2>
+  <ul>
+    <li><strong>Account info:</strong> Your email address, username, and display name when you register.</li>
+    <li><strong>Profile photo:</strong> Stored as compressed base64 data directly in Firestore (no third-party storage).</li>
+    <li><strong>Messages:</strong> Text messages you send are stored in Firestore and are only accessible to the conversation participants.</li>
+    <li><strong>Usage data:</strong> Last seen timestamps to show activity status.</li>
+  </ul>
+
+  <h2>2. How We Use Your Information</h2>
+  <ul>
+    <li>To provide and maintain the LinkUp chat service.</li>
+    <li>To authenticate your identity securely via Firebase Auth.</li>
+    <li>To display your profile to other users.</li>
+    <li>To deliver real-time messages between users.</li>
+  </ul>
+
+  <h2>3. Data Storage</h2>
+  <p>All data is stored in <strong>Google Firebase Firestore</strong> in the <code>asia-southeast1</code> region. We do not use Firebase Storage — profile images are stored as compressed JPEG data within Firestore documents.</p>
+
+  <h2>4. Data Sharing</h2>
+  <p>We do <strong>not</strong> sell, trade, or share your personal data with third parties. Your messages are private and only visible to you and the people you are chatting with.</p>
+
+  <h2>5. Data Security</h2>
+  <p>We use Firestore Security Rules to ensure users can only access their own data and conversations they are part of. All communications are encrypted in transit.</p>
+
+  <h2>6. Your Rights</h2>
+  <ul>
+    <li>You may delete your account at any time from Profile → Settings → Delete Account.</li>
+    <li>Account deletion removes your profile data from Firestore.</li>
+    <li>You may export your data from Profile → Settings → Export Data.</li>
+  </ul>
+
+  <h2>7. Children's Privacy</h2>
+  <p>LinkUp is not intended for children under 13. We do not knowingly collect data from children.</p>
+
+  <h2>8. Changes to This Policy</h2>
+  <p>We may update this Privacy Policy from time to time. Changes will be reflected in the "Last updated" date above.</p>
+
+  <hr/>
+  <p>For questions, contact us at <a href="mailto:support@linkup.app">support@linkup.app</a></p>
+</body>
+</html>
