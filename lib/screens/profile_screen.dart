@@ -79,21 +79,21 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 24),
           _AvatarEditor(me: me!),
           const SizedBox(height: 16),
-          Text(me!.displayName,
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary(dark))),
-          const SizedBox(height: 4),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text('@${me!.username}',
+            Text(me!.displayName,
                 style: TextStyle(
-                    fontSize: 14, color: AppColors.textSecondary(dark))),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(dark))),
             if (me!.isVerified) ...[
               const SizedBox(width: 4),
-              const Icon(Icons.verified, color: AppColors.verified, size: 16),
+              const Icon(Icons.verified, color: AppColors.verified, size: 20),
             ],
           ]),
+          const SizedBox(height: 4),
+          Text('@${me!.username}',
+              style: TextStyle(
+                  fontSize: 14, color: AppColors.textSecondary(dark))),
           const SizedBox(height: 6),
           Text(me!.email,
               style: TextStyle(

@@ -106,11 +106,15 @@ class UserService {
     return _firestore
         .collection('verification_requests')
         .where('status', isEqualTo: 'pending')
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => VerificationRequest.fromMap(d.data(), d.id))
-            .toList());
+        .map((snap) {
+          final list = snap.docs
+              .map((d) => VerificationRequest.fromMap(d.data(), d.id))
+              .toList();
+          // Sort in Dart to avoid needing a Firestore composite index
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
   }
 
   Future<void> reviewVerification({
