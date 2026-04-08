@@ -39,7 +39,10 @@ class _SignInScreenState extends State<SignInScreen> {
     setState(() => _loading = true);
     try {
       await _authService.signIn(email: email, password: password);
-      // AuthWrapper handles navigation automatically via authStateChanges stream
+      // Pop everything so AuthWrapper (root) can show HomeScreen
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } catch (e) {
       String msg = e.toString().replaceAll('Exception: ', '');
       if (msg.contains('user-not-found') ||

@@ -54,13 +54,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
         username: _usernameCtrl.text.trim(),
         displayName: _displayNameCtrl.text.trim(),
       );
-      // AuthWrapper navigates automatically after sign-up
+      // Pop everything so AuthWrapper (root) can show HomeScreen
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } catch (e) {
       String msg = e.toString().replaceAll('Exception: ', '');
       if (msg.contains('email-already-in-use')) msg = 'Email already in use';
       else if (msg.contains('Username already taken')) msg = 'Username already taken';
       else if (msg.contains('network-request-failed')) msg = 'No internet connection';
-      else msg = 'Sign up failed. Try again';
+      else if (msg.contains('invalid-email')) msg = 'Invalid email address';
+      else if (msg.contains('weak-password')) msg = 'Password is too weak';
+      else if (msg.contains('too-many-requests')) msg = 'Too many attempts. Try again later';
       if (mounted) _showError(msg);
     } finally {
       if (mounted) setState(() => _loading = false);
