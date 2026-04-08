@@ -15,31 +15,42 @@ class AuthService {
     required String username,
     required String displayName,
   }) async {
-    // Check username uniqueness
-    final q = await _db
-        .collection('users')
-        .where('username', isEqualTo: username.toLowerCase())
-        .get();
-    if (q.docs.isNotEmpty) throw Exception('Username already taken');
-
+    // Step 1: Create Firebase Auth account first (so request.auth exists)
     final cred = await _auth.createUserWithEmailAndPassword(
         email: email, password: password);
 
-    final user = UserModel(
-      uid: cred.user!.uid,
-      username: username.toLowerCase(),
-      displayName: displayName,
-      email: email,
-      role: 'user',
-      isVerified: false,
-      isAdmin: false,
-      isSuspended: false,
-      createdAt: DateTime.now(),
-      lastSeen: DateTime.now(),
-    );
+    try {
+      // Step 2: Now check username uniqueness (auth exists → Firestore read allowed)
+      final q = await _db
+          .collection('users')
+          .where('username', isEqualTo: username.toLowerCase())
+          .get();
+      if (q.docs.isNotEmpty) {
+        // Username taken → delete the auth account we just created, then throw
+        await cred.user!.delete();
+        throw Exception('Username already taken');
+      }
+
+      final user = UserModel(
+        uid: cred.user!.uid,
+        username: username.toLowerCase(),
+        displayName: displayName,
+        email: email,
+        role: 'user',
+        isVerified: false,
+        isAdmin: false,
+        isSuspended: false,
+        createdAt: DateTime.now(),
+        lastSeen: DateTime.now(),
+      );
 
     await _db.collection('users').doc(cred.user!.uid).set(user.toMap());
-    return user;
+      return user;
+    } catch (e) {
+      // If anything after auth creation fails, clean up the auth account
+      try { await cred.user!.delete(); } catch (_) {}
+      rethrow;
+    }
   }
 
   Future<UserModel?> signIn({
