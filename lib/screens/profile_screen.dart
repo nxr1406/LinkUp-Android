@@ -98,6 +98,18 @@ class ProfileScreen extends StatelessWidget {
           Text(me!.email,
               style: TextStyle(
                   fontSize: 13, color: AppColors.textSecondary(dark))),
+          if (me!.bio != null && me!.bio!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                me!.bio!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 14, color: AppColors.textSecondary(dark)),
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           // Stats row
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [

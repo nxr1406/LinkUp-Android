@@ -4,10 +4,11 @@ class UserModel {
   final String displayName;
   final String email;
   final String? photoBase64;
+  final String? bio;
   final bool isVerified;
   final bool isAdmin;
   final bool isSuspended;
-  final String role; // 'admin' | 'user'
+  final String role;
   final DateTime createdAt;
   final DateTime? lastSeen;
 
@@ -17,6 +18,7 @@ class UserModel {
     required this.displayName,
     required this.email,
     this.photoBase64,
+    this.bio,
     this.isVerified = false,
     this.isAdmin = false,
     this.isSuspended = false,
@@ -26,7 +28,6 @@ class UserModel {
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map, String uid) {
-    // Support both legacy isAdmin bool AND new role field
     final roleStr = (map['role'] as String?) ?? '';
     final roleIsAdmin = roleStr == 'admin';
     final legacyIsAdmin = map['isAdmin'] as bool? ?? false;
@@ -37,8 +38,9 @@ class UserModel {
       displayName: map['displayName'] ?? '',
       email: map['email'] ?? '',
       photoBase64: map['photoBase64'],
+      bio: map['bio'],
       isVerified: map['isVerified'] ?? false,
-      isAdmin: roleIsAdmin || legacyIsAdmin, // either field makes admin
+      isAdmin: roleIsAdmin || legacyIsAdmin,
       isSuspended: map['isSuspended'] ?? false,
       role: roleStr.isNotEmpty ? roleStr : (legacyIsAdmin ? 'admin' : 'user'),
       createdAt: map['createdAt'] != null
@@ -56,6 +58,7 @@ class UserModel {
       'displayName': displayName,
       'email': email,
       'photoBase64': photoBase64,
+      'bio': bio,
       'isVerified': isVerified,
       'isAdmin': isAdmin,
       'isSuspended': isSuspended,
@@ -69,6 +72,7 @@ class UserModel {
     String? displayName,
     String? username,
     String? photoBase64,
+    String? bio,
     bool? isVerified,
     bool? isAdmin,
     bool? isSuspended,
@@ -81,6 +85,7 @@ class UserModel {
       displayName: displayName ?? this.displayName,
       email: email,
       photoBase64: photoBase64 ?? this.photoBase64,
+      bio: bio ?? this.bio,
       isVerified: isVerified ?? this.isVerified,
       isAdmin: isAdmin ?? this.isAdmin,
       isSuspended: isSuspended ?? this.isSuspended,
