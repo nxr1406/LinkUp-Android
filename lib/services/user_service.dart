@@ -219,4 +219,75 @@ class UserService {
   Future<void> deleteUserData(String uid) async {
     await _firestore.collection('users').doc(uid).delete();
   }
+  // ── Follow System ──────────────────────────────────────────────────────────
+
+  /// Follow a user. Doc ID = followerId_followingId
+  Future<void> followUser({
+    required String followerId,
+    required String followingId,
+  }) async {
+    final docId = '${followerId}_$followingId';
+    final batch = _firestore.batch();
+
+    // Write follow relationship
+    batch.set(_firestore.collection('follows').doc(docId), {
+      'followerId': followerId,
+      'followingId': followingId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    // Increment follower/following counts on user docs
+    batch.update(_firestore.collection('users').doc(followingId), {
+      'followersCount': FieldValue.increment(1),
+    });
+    batch.update(_firestore.collection('users').doc(followerId), {
+      'followingCount': FieldValue.increment(1),
+    });
+
+    await batch.commit();
+  }
+
+  Future<void> unfollowUser({
+    required String followerId,
+    required String followingId,
+  }) async {
+    final docId = '${followerId}_$followingId';
+    final batch = _firestore.batch();
+
+    batch.delete(_firestore.collection('follows').doc(docId));
+
+    batch.update(_firestore.collection('users').doc(followingId), {
+      'followersCount': FieldValue.increment(-1),
+    });
+    batch.update(_firestore.collection('users').doc(followerId), {
+      'followingCount': FieldValue.increment(-1),
+    });
+
+    await batch.commit();
+  }
+
+  /// Real-time stream: is [followerId] following [followingId]?
+  Stream<bool> isFollowingStream({
+    required String followerId,
+    required String followingId,
+  }) {
+    final docId = '${followerId}_$followingId';
+    return _firestore
+        .collection('follows')
+        .doc(docId)
+        .snapshots()
+        .map((doc) => doc.exists);
+  }
+
+  /// Stream of follow counts for a user
+  Stream<Map<String, int>> followCountsStream(String uid) {
+    return _firestore.collection('users').doc(uid).snapshots().map((doc) {
+      final data = doc.data() ?? {};
+      return {
+        'followers': (data['followersCount'] as int?) ?? 0,
+        'following': (data['followingCount'] as int?) ?? 0,
+      };
+    });
+  }
+
 }

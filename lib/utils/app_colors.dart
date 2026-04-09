@@ -5,8 +5,8 @@ class AppColors {
   static const Color primary      = Color(0xFFE91E8C);
   static const Color primaryLight = Color(0xFFF06292);
   static const Color primaryDark  = Color(0xFFC2185B);
-  static const Color verified     = Color(0xFF1E88E5);
-  static const Color messageBubble = Color(0xFF1E88E5);
+  static const Color verified     = Color(0xFFE91E8C);  // pink — same as primary
+  static const Color messageBubble = Color(0xFFE91E8C); // pink
 
   // ── Light theme ────────────────────────────────────────────────
   static const Color background   = Color(0xFFF5F5F5);
@@ -43,5 +43,5 @@ class AppColors {
   static Color textSecondary(bool dark) => dark ? darkTextMedium : textMedium;
   static Color divider(bool dark)       => dark ? darkDivider : greyLight;
   static Color inputFill(bool dark)     => dark ? darkInputFill : white;
-  static Color bubbleOther(bool dark)   => dark ? darkBubbleOther : const Color(0xFFF1F1F1);
+  static Color bubbleOther(bool dark)   => dark ? darkBubbleOther : const Color(0xFFFCE4EC); // light pink tint
 }

@@ -59,6 +59,8 @@ class ChatService {
       'isUnsent': false,
       'isEdited': false,
       'reactions': {},
+      // 'sent' = reached Firestore server successfully
+      'status': 'sent',
       if (replyToId != null) 'replyToId': replyToId,
       if (replyToText != null) 'replyToText': replyToText,
       if (replyToSender != null) 'replyToSender': replyToSender,
@@ -82,16 +84,52 @@ class ChatService {
     return chatId;
   }
 
+  /// Call this when the receiver opens the chat — marks all unread as 'delivered'
+  Future<void> markDelivered({
+    required String chatId,
+    required String receiverUid,
+  }) async {
+    final msgs = await _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .where('status', isEqualTo: 'sent')
+        .where('senderId', isNotEqualTo: receiverUid)
+        .get();
+
+    if (msgs.docs.isEmpty) return;
+    final batch = _firestore.batch();
+    for (final doc in msgs.docs) {
+      batch.update(doc.reference, {'status': 'delivered'});
+    }
+    await batch.commit();
+  }
+
   Future<void> markMessagesRead({
     required String chatId,
     required String userId,
   }) async {
-    final batch = _firestore.batch();
+    // Update chat-level seen timestamp + clear unread
     final chatRef = _firestore.collection('chats').doc(chatId);
-    batch.update(chatRef, {
+    await chatRef.update({
       'unreadCount.$userId': 0,
       'seenBy.$userId': FieldValue.serverTimestamp(),
     });
+
+    // Mark all delivered messages from the other person as 'seen'
+    final msgs = await _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .where('status', whereIn: ['sent', 'delivered'])
+        .where('senderId', isNotEqualTo: userId)
+        .get();
+
+    if (msgs.docs.isEmpty) return;
+    final batch = _firestore.batch();
+    for (final doc in msgs.docs) {
+      batch.update(doc.reference, {'status': 'seen'});
+    }
     await batch.commit();
   }
 
@@ -157,19 +195,18 @@ class ChatService {
         if (v is List) reactions[k.toString()] = List<String>.from(v);
       });
 
-      // Remove user from ALL emoji lists first (one reaction rule)
-      reactions.forEach((e, uids) => uids.remove(uid));
-
-      // If same emoji → remove (toggle off). Else add to new emoji.
-      final existing = reactions[emoji] ?? [];
-      // After removing uid above, if user WAS in this emoji it's now gone → add
-      // But we need to check BEFORE removal. Use a flag approach:
+      // Check BEFORE any mutation whether user already reacted with this emoji
       final wasInThisEmoji =
           (snap.data()?['reactions']?[emoji] as List?)?.contains(uid) ?? false;
 
+      // Remove user from ALL emoji lists (enforce one-reaction-per-user rule)
+      reactions.forEach((_, uids) => uids.remove(uid));
+
       if (!wasInThisEmoji) {
-        reactions[emoji] = [...existing, uid];
+        // Add to the chosen emoji
+        reactions[emoji] = [...(reactions[emoji] ?? []), uid];
       }
+      // else: wasInThisEmoji==true means we just toggled it off — already removed above
 
       // Clean up empty lists
       reactions.removeWhere((_, v) => v.isEmpty);

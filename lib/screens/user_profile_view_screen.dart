@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/chat_service.dart';
+import '../services/user_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/avatar_widget.dart';
 import 'chat_screen.dart';
@@ -14,13 +15,14 @@ class UserProfileViewScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final me = FirebaseAuth.instance.currentUser!;
     final chatService = ChatService();
+    final userService = UserService();
     final dark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg(dark),
       body: CustomScrollView(
         slivers: [
-          // ── SliverAppBar with avatar ───────────────────────
+          // ── SliverAppBar ───────────────────────────────────
           SliverAppBar(
             expandedHeight: 220,
             pinned: true,
@@ -32,8 +34,8 @@ class UserProfileViewScreen extends StatelessWidget {
             ),
             actions: [
               IconButton(
-                icon: Icon(Icons.more_horiz,
-                    color: AppColors.textPrimary(dark)),
+                icon:
+                    Icon(Icons.more_horiz, color: AppColors.textPrimary(dark)),
                 onPressed: () {},
               ),
             ],
@@ -41,7 +43,6 @@ class UserProfileViewScreen extends StatelessWidget {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Gradient background
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -54,192 +55,220 @@ class UserProfileViewScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Avatar centered
                   Positioned(
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    child: Column(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: AppColors.scaffoldBg(dark), width: 4),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
-                                  blurRadius: 12),
-                            ],
-                          ),
-                          child: AvatarWidget(user: user, radius: 52),
+                    child: Column(children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: AppColors.scaffoldBg(dark), width: 4),
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 12),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                      ],
-                    ),
+                        child: AvatarWidget(user: user, radius: 52),
+                      ),
+                      const SizedBox(height: 8),
+                    ]),
                   ),
                 ],
               ),
             ),
           ),
 
-          // ── Body content ───────────────────────────────────
+          // ── Body ───────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const SizedBox(height: 12),
+              child: Column(children: [
+                const SizedBox(height: 12),
 
-                  // Name + badge
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        user.displayName,
-                        style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary(dark)),
-                      ),
-                      if (user.isVerified) ...[
-                        const SizedBox(width: 6),
-                        const Icon(Icons.verified,
-                            color: AppColors.verified, size: 20),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 4),
+                // Name + badge
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Text(user.displayName,
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary(dark))),
+                  if (user.isVerified) ...[
+                    const SizedBox(width: 6),
+                    const Icon(Icons.verified,
+                        color: AppColors.verified, size: 20),
+                  ],
+                ]),
+                const SizedBox(height: 4),
 
-                  // Username
-                  Text(
-                    '@${user.username}',
+                Text('@${user.username}',
                     style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary(dark)),
-                  ),
+                        color: AppColors.textSecondary(dark))),
 
-                  // Bio
-                  if (user.bio != null && user.bio!.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      user.bio!,
+                // Bio
+                if (user.bio != null && user.bio!.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(user.bio!,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           fontSize: 14,
                           color: AppColors.textSecondary(dark),
-                          height: 1.4),
-                    ),
-                  ],
+                          height: 1.4)),
+                ],
 
-                  const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-                  // Stats row
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 24),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBg(dark),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _StatItem(
-                            value: '0',
-                            label: 'FOLLOWERS',
-                            dark: dark),
-                        Container(
-                            width: 1,
-                            height: 32,
-                            color: AppColors.divider(dark)),
-                        _StatItem(
-                            value: '0',
-                            label: 'FOLLOWING',
-                            dark: dark),
-                      ],
+                // Stats row — live follower counts
+                StreamBuilder<Map<String, int>>(
+                  stream: userService.followCountsStream(user.uid),
+                  builder: (context, snap) {
+                    final counts = snap.data ?? {'followers': 0, 'following': 0};
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 24),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBg(dark),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _StatItem(
+                              value: '${counts['followers']}',
+                              label: 'FOLLOWERS',
+                              dark: dark),
+                          Container(
+                              width: 1,
+                              height: 32,
+                              color: AppColors.divider(dark)),
+                          _StatItem(
+                              value: '${counts['following']}',
+                              label: 'FOLLOWING',
+                              dark: dark),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
+                // Action buttons
+                Row(children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 46,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          final chatId =
+                              chatService.getChatId(me.uid, user.uid);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChatScreen(
+                                chatId: chatId,
+                                otherUser: user,
+                                currentUid: me.uid,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                        label: const Text('Message'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 12),
 
-                  const SizedBox(height: 20),
+                  // ── Follow button (live state) ──────────────
+                  Expanded(
+                    child: StreamBuilder<bool>(
+                      stream: userService.isFollowingStream(
+                          followerId: me.uid, followingId: user.uid),
+                      builder: (context, snap) {
+                        final isFollowing = snap.data ?? false;
+                        final isLoading =
+                            snap.connectionState == ConnectionState.waiting;
 
-                  // Action buttons
-                  Row(children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 46,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            final chatId =
-                                chatService.getChatId(me.uid, user.uid);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ChatScreen(
-                                  chatId: chatId,
-                                  otherUser: user,
-                                  currentUid: me.uid,
+                        return SizedBox(
+                          height: 46,
+                          child: isFollowing
+                              ? OutlinedButton.icon(
+                                  onPressed: isLoading
+                                      ? null
+                                      : () => userService.unfollowUser(
+                                          followerId: me.uid,
+                                          followingId: user.uid),
+                                  icon: Icon(Icons.person_remove_outlined,
+                                      size: 18,
+                                      color: AppColors.textPrimary(dark)),
+                                  label: Text('Following',
+                                      style: TextStyle(
+                                          color: AppColors.textPrimary(dark),
+                                          fontWeight: FontWeight.w600)),
+                                  style: OutlinedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    side: BorderSide(
+                                        color: AppColors.divider(dark)),
+                                  ),
+                                )
+                              : ElevatedButton.icon(
+                                  onPressed: isLoading
+                                      ? null
+                                      : () => userService.followUser(
+                                          followerId: me.uid,
+                                          followingId: user.uid),
+                                  icon: const Icon(Icons.person_add_outlined,
+                                      size: 18),
+                                  label: const Text('Follow',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    elevation: 0,
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.chat_bubble_outline,
-                              size: 18),
-                          label: const Text('Message'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            elevation: 0,
-                          ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: SizedBox(
-                        height: 46,
-                        child: OutlinedButton.icon(
-                          onPressed: () {},
-                          icon: Icon(Icons.person_add_outlined,
-                              size: 18,
-                              color: AppColors.textPrimary(dark)),
-                          label: Text('Follow',
-                              style: TextStyle(
-                                  color: AppColors.textPrimary(dark))),
-                          style: OutlinedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            side: BorderSide(
-                                color: AppColors.divider(dark)),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ]),
+                  ),
+                ]),
 
-                  // Suspended warning
-                  if (user.isSuspended) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Row(children: [
-                        Icon(Icons.block, color: Colors.red, size: 18),
-                        SizedBox(width: 8),
-                        Text('This account is suspended',
-                            style: TextStyle(
-                                color: Colors.red, fontSize: 13)),
-                      ]),
+                // Suspended warning
+                if (user.isSuspended) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ],
-                  const SizedBox(height: 30),
+                    child: const Row(children: [
+                      Icon(Icons.block, color: Colors.red, size: 18),
+                      SizedBox(width: 8),
+                      Text('This account is suspended',
+                          style: TextStyle(color: Colors.red, fontSize: 13)),
+                    ]),
+                  ),
                 ],
-              ),
+                const SizedBox(height: 30),
+              ]),
             ),
           ),
         ],

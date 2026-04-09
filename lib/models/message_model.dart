@@ -13,6 +13,8 @@ class MessageModel {
   final String? replyToSender;
   final String? forwardedFrom;
   final Map<String, List<String>> reactions;
+  // status: 'sending' | 'sent' | 'delivered' | 'seen' | 'error'
+  final String status;
 
   MessageModel({
     required this.id,
@@ -27,6 +29,7 @@ class MessageModel {
     this.replyToSender,
     this.forwardedFrom,
     this.reactions = const {},
+    this.status = 'sent',
   });
 
   factory MessageModel.fromMap(Map<String, dynamic> map, String id) {
@@ -52,6 +55,7 @@ class MessageModel {
       replyToSender: map['replyToSender'],
       forwardedFrom: map['forwardedFrom'],
       reactions: rxn,
+      status: map['status'] ?? 'sent',
     );
   }
 
@@ -68,6 +72,7 @@ class MessageModel {
       if (replyToSender != null) 'replyToSender': replyToSender,
       if (forwardedFrom != null) 'forwardedFrom': forwardedFrom,
       'reactions': reactions.map((k, v) => MapEntry(k, v)),
+      'status': status,
     };
   }
 }

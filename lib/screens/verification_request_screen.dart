@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/user_service.dart';
@@ -56,6 +57,67 @@ class _VerificationRequestScreenState
 
   @override
   Widget build(BuildContext context) {
+    // ── Already verified → "You are verified" screen ───────────
+    if (widget.me.isVerified) {
+      return Scaffold(
+        backgroundColor: AppColors.white,
+        appBar: AppBar(
+          backgroundColor: AppColors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: AppColors.black, size: 22),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'Request Verification',
+            style: TextStyle(
+                color: AppColors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 18),
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Icon(Icons.check,
+                  color: AppColors.primary.withOpacity(0.6), size: 22),
+            ),
+          ],
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Pink seal badge
+              SizedBox(
+                width: 80,
+                height: 80,
+                child: CustomPaint(
+                  painter: _SealBadgePainter(color: AppColors.primary),
+                  child: const Center(
+                    child: Icon(Icons.check, color: Colors.white, size: 36),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 28),
+              const Text(
+                'You are verified',
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.black),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Your account has a verified badge.',
+                style: TextStyle(fontSize: 14, color: AppColors.textMedium),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // ── Not yet verified → request form ────────────────────────
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
@@ -66,11 +128,13 @@ class _VerificationRequestScreenState
               color: AppColors.black, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Request Verification',
-            style: TextStyle(
-                color: AppColors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 18)),
+        title: const Text(
+          'Request Verification',
+          style: TextStyle(
+              color: AppColors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 18),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -127,9 +191,11 @@ class _VerificationRequestScreenState
                 child: _loading
                     ? const CircularProgressIndicator(
                         color: Colors.white, strokeWidth: 2)
-                    : const Text('Submit Request',
+                    : const Text(
+                        'Submit Request',
                         style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
+                            fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
               ),
             ),
           ],
@@ -137,4 +203,38 @@ class _VerificationRequestScreenState
       ),
     );
   }
+}
+
+// ── 8-point seal badge painter ─────────────────────────────────────────────────
+class _SealBadgePainter extends CustomPainter {
+  final Color color;
+  const _SealBadgePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    const numPoints = 8;
+    final outerR = size.width / 2;
+    final innerR = outerR * 0.80;
+
+    final path = Path();
+    for (int i = 0; i < numPoints * 2; i++) {
+      final angle = (i * math.pi / numPoints) - math.pi / 2;
+      final r = i.isEven ? outerR : innerR;
+      final x = cx + r * math.cos(angle);
+      final y = cy + r * math.sin(angle);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_SealBadgePainter old) => old.color != color;
 }

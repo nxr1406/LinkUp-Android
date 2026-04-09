@@ -42,18 +42,31 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _markRead();
+    _markDelivered();
     _msgCtrl.addListener(_onTextChanged);
   }
 
   void _onTextChanged() {
     final hasText = _msgCtrl.text.trim().isNotEmpty;
-    if (hasText && !_isTyping) {
+    if (!hasText) {
+      // Field cleared — stop typing immediately
+      if (_isTyping) {
+        _isTyping = false;
+        _typingTimer?.cancel();
+        _chatService.setTyping(
+            chatId: widget.chatId, uid: widget.currentUid, isTyping: false);
+      }
+      return;
+    }
+    // Start typing if not already
+    if (!_isTyping) {
       _isTyping = true;
       _chatService.setTyping(
           chatId: widget.chatId, uid: widget.currentUid, isTyping: true);
     }
+    // Reset inactivity timer — only fires if user STOPS typing for 3s
     _typingTimer?.cancel();
-    _typingTimer = Timer(const Duration(seconds: 2), () {
+    _typingTimer = Timer(const Duration(seconds: 3), () {
       if (_isTyping) {
         _isTyping = false;
         _chatService.setTyping(
@@ -66,6 +79,13 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       await _chatService.markMessagesRead(
           chatId: widget.chatId, userId: widget.currentUid);
+    } catch (_) {}
+  }
+
+  Future<void> _markDelivered() async {
+    try {
+      await _chatService.markDelivered(
+          chatId: widget.chatId, receiverUid: widget.currentUid);
     } catch (_) {}
   }
 
@@ -366,6 +386,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             currentUid: widget.currentUid,
                             chatId: widget.chatId,
                             chatService: _chatService,
+                            otherUser: widget.otherUser,
                             myNick: chat?.nicknames[widget.currentUid],
                             otherNick: chat?.nicknames[
                                 widget.otherUser?.uid ?? ''],
@@ -846,6 +867,7 @@ class _MessageBubble extends StatelessWidget {
   final ChatService chatService;
   final String? myNick, otherNick;
   final VoidCallback? onLongPress;
+  final UserModel? otherUser;
 
   const _MessageBubble({
     required this.message,
@@ -859,6 +881,7 @@ class _MessageBubble extends StatelessWidget {
     this.myNick,
     this.otherNick,
     this.onLongPress,
+    this.otherUser,
   });
 
   @override
@@ -1009,13 +1032,10 @@ class _MessageBubble extends StatelessWidget {
                     ),
                     if (isMe) ...[
                       const SizedBox(width: 4),
-                      // Messenger-style seen: blue ticks if seen, white if not
-                      Icon(
-                        Icons.done_all,
-                        size: 13,
-                        color: showSeen
-                            ? Colors.lightBlueAccent
-                            : Colors.white.withOpacity(0.6),
+                      _MessageStatusIcon(
+                        status: message.status,
+                        showSeen: showSeen,
+                        otherUser: otherUser,
                       ),
                     ],
                   ]),
@@ -1066,25 +1086,61 @@ class _MessageBubble extends StatelessWidget {
               ),
             ),
 
-          // Seen status under last my message
+          // Seen avatar below last sent message
           if (showSeen)
             Padding(
-              padding:
-                  const EdgeInsets.only(right: 4, bottom: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AvatarWidget(user: null, radius: 7),
-                  const SizedBox(width: 3),
-                  Text('Seen',
-                      style: TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textSecondary(dark))),
-                ],
-              ),
+              padding: const EdgeInsets.only(right: 4, bottom: 4),
+              child: AvatarWidget(user: otherUser, radius: 8),
             ),
         ],
       ),
     );
+  }
+}
+
+// ── Message status icon ────────────────────────────────────────────────────────
+class _MessageStatusIcon extends StatelessWidget {
+  final String status;
+  final bool showSeen;
+  final UserModel? otherUser;
+
+  const _MessageStatusIcon({
+    required this.status,
+    required this.showSeen,
+    this.otherUser,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Seen → show other user's profile pic (tiny circle)
+    if (showSeen || status == 'seen') {
+      return ClipOval(
+        child: SizedBox(
+          width: 14,
+          height: 14,
+          child: AvatarWidget(user: otherUser, radius: 7),
+        ),
+      );
+    }
+
+    switch (status) {
+      case 'sending':
+        // Single hollow tick — being sent
+        return Icon(Icons.done,
+            size: 13, color: Colors.white.withOpacity(0.5));
+      case 'delivered':
+        // Double filled tick — delivered to device
+        return Icon(Icons.done_all,
+            size: 13, color: Colors.white.withOpacity(0.9));
+      case 'error':
+        // Red cross — failed
+        return const Icon(Icons.error_outline,
+            size: 13, color: Colors.redAccent);
+      case 'sent':
+      default:
+        // Single tick — reached server
+        return Icon(Icons.check,
+            size: 13, color: Colors.white.withOpacity(0.7));
+    }
   }
 }
