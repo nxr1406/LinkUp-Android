@@ -38,9 +38,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Timer? _typingTimer;
   bool _isTyping = false;
 
-  // Scroll — track previous message count to scroll only on new messages
-  int _prevMsgCount = 0;
-  bool _initialScrollDone = false;
+  // No scroll tracking needed — ListView uses reverse:true
 
   @override
   void initState() {
@@ -143,23 +141,18 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _scrollToBottom({bool animate = true}) {
+  void _scrollToBottom() {
+    // With reverse:true, "bottom" is offset 0
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollCtrl.hasClients) return;
       final pos = _scrollCtrl.position;
-      // Only auto-scroll if user is already near the bottom (within 200px)
-      final nearBottom = pos.maxScrollExtent - pos.pixels < 200;
-      if (nearBottom || !_initialScrollDone) {
-        if (animate && _initialScrollDone) {
-          _scrollCtrl.animateTo(
-            pos.maxScrollExtent,
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOut,
-          );
-        } else {
-          _scrollCtrl.jumpTo(pos.maxScrollExtent);
-          _initialScrollDone = true;
-        }
+      final nearBottom = pos.pixels < 200; // reverse:true so 0 = bottom
+      if (nearBottom) {
+        _scrollCtrl.animateTo(
+          0,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
       }
     });
   }
@@ -341,34 +334,36 @@ class _ChatScreenState extends State<ChatScreen> {
                     );
                   }
 
-                  // Scroll only when message count increases (new message arrived)
-                  // or on first load — NOT on every typing/chat stream update
-                  if (!_initialScrollDone || messages.length > _prevMsgCount) {
-                    _prevMsgCount = messages.length;
-                    _scrollToBottom(animate: _initialScrollDone);
-                  }
+                  // Scroll to bottom when new message arrives
+                  // With reverse:true this just ensures we stay at offset 0
 
                   // Seen status: last message seen by other
                   final otherSeenAt =
                       chat?.seenBy[widget.otherUser?.uid ?? ''];
 
+                  // reverse:true means newest messages at bottom visually,
+                  // list starts rendered at the bottom — no scroll needed on open
+                  final reversed = messages.reversed.toList();
                   return ListView.builder(
                     controller: _scrollCtrl,
+                    reverse: true,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 8),
-                    itemCount: messages.length,
+                    itemCount: reversed.length,
                     itemBuilder: (context, index) {
-                      final msg = messages[index];
+                      final msg = reversed[index];
                       final isMe = msg.senderId == widget.currentUid;
-                      final showDate = index == 0 ||
+                      // In reversed list, previous message is index+1
+                      final showDate = index == reversed.length - 1 ||
                           _formatDateHeader(msg.timestamp) !=
                               _formatDateHeader(
-                                  messages[index - 1].timestamp);
+                                  reversed[index + 1].timestamp);
 
-                      // isLastMyMsg: this is the last message sent by ME in the list
+                      // In reversed list, index==0 is the newest message
+                      // isLastMyMsg: newest message sent by me
                       final isLastMyMsg = isMe && (
-                          index == messages.length - 1 ||
-                          messages.sublist(index + 1)
+                          index == 0 ||
+                          reversed.sublist(0, index)
                               .every((m) => m.senderId != widget.currentUid)
                       );
                       final showSeen = isLastMyMsg &&

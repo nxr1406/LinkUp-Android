@@ -17,8 +17,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. Java 21 ───────────────────────────────────────────────
-      - name: Set up Java 17
+      # ── 2. Java ───────────────────────────────────────────────────
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -32,12 +32,25 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # ── 4. google-services.json from Secret ──────────────────────
+      # ── 4. Firebase Config ───────────────────────────────────────
       - name: Write google-services.json
         run: |
           echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
-      # ── 5. Generate local.properties ─────────────────────────────
+      # ── 5. Keystore Decode ────────────────────────────────────────
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/keystore.jks
+
+      # ── 6. Create keystore.properties ────────────────────────────
+      - name: Create keystore.properties
+        run: |
+          echo "storeFile=android/app/keystore.jks" > android/keystore.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/keystore.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/keystore.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/keystore.properties
+
+      # ── 7. local.properties ───────────────────────────────────────
       - name: Generate local.properties
         run: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
@@ -45,26 +58,23 @@ jobs:
           FLUTTER_SDK=$(dirname $(dirname $FLUTTER_PATH))
           echo "flutter.sdk=$FLUTTER_SDK" >> android/local.properties
           echo "flutter.buildMode=release" >> android/local.properties
-          echo "flutter.versionName=1.0.0" >> android/local.properties
-          echo "flutter.versionCode=1" >> android/local.properties
 
-      # ── 6. Dependencies ──────────────────────────────────────────
-      - name: Get Flutter dependencies
+      # ── 8. Dependencies ──────────────────────────────────────────
+      - name: Get dependencies
         run: flutter pub get
 
-      # ── 6.1 Generate App Icons ───────────────────────────────────
+      # ── 9. Generate Assets ───────────────────────────────────────
       - name: Generate App Icons
         run: flutter pub run flutter_launcher_icons
 
-      # ── 6.2 Generate Splash ──────────────────────────────────────
       - name: Generate Splash Screen
         run: flutter pub run flutter_native_splash:create
 
-      # ── 7. Analyze ───────────────────────────────────────────────
-      - name: Analyze (warnings only)
+      # ── 10. Analyze ──────────────────────────────────────────────
+      - name: Analyze project
         run: flutter analyze --no-fatal-infos || true
 
-      # ── 8. Build ARM-v7 release APK ──────────────────────────────
+      # ── 11. Build Signed APK (ARM-v7) ───────────────────────────
       - name: Build release APK (armeabi-v7a)
         run: |
           flutter build apk \
@@ -73,35 +83,38 @@ jobs:
             --split-per-abi \
             --no-shrink
 
-      # ── 9. Stage APK ─────────────────────────────────────────────
-      - name: Stage APK
+      # ── 12. Stage APK ────────────────────────────────────────────
+      - name: Prepare output
         run: |
           mkdir -p output
           cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk \
-             output/LinkUp-arm7-release.apk
+             output/LinkUp-armv7-release.apk
 
-      # ── 10. Upload artifact (every push) ─────────────────────────
+      # ── 13. Upload Artifact ──────────────────────────────────────
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LinkUp-arm7-release
-          path: output/LinkUp-arm7-release.apk
+          name: LinkUp-armv7-release
+          path: output/LinkUp-armv7-release.apk
           retention-days: 30
 
-      # ── 11. GitHub Release (only on tag push) ────────────────────
+      # ── 14. GitHub Release (only tags) ───────────────────────────
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: output/LinkUp-arm7-release.apk
+          files: output/LinkUp-armv7-release.apk
           name: "LinkUp ${{ github.ref_name }}"
           body: |
-            ## LinkUp ${{ github.ref_name }}
-            ### Download
-            **LinkUp-arm7-release.apk** — Android ARM 32-bit
-            ### Requirements
-            Android 5.0+ (API 21+)
-          draft: false
-          prerelease: false
+            ## 🚀 LinkUp Release ${{ github.ref_name }}
+
+            ### 📦 Download
+            - LinkUp ARM-v7 Signed APK
+
+            ### 📱 Requirements
+            - Android 5.0+ (API 21+)
+
+            ### 🔐 Signed Build
+            - Keystore signing enabled
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

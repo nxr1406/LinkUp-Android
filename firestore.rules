@@ -46,7 +46,9 @@ service cloud.firestore {
           request.resource.data.senderId == request.auth.uid;
         allow delete: if isSignedIn() &&
           resource.data.senderId == request.auth.uid;
-        allow update: if false;
+        // Allow: sender can edit/unsent, any participant can update reactions/status
+        allow update: if isSignedIn() &&
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
       }
     }
 
