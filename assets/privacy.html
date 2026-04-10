@@ -1,73 +1,294 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Privacy Policy – LinkUp</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #fff;
-      color: #212121;
-      padding: 24px 20px 48px;
-      line-height: 1.7;
-      font-size: 15px;
-    }
-    h1 { font-size: 22px; font-weight: 700; color: #E91E8C; margin-bottom: 4px; }
-    .updated { font-size: 12px; color: #9E9E9E; margin-bottom: 28px; }
-    h2 { font-size: 16px; font-weight: 600; color: #1A1A2E; margin: 24px 0 8px; }
-    p, li { color: #424242; margin-bottom: 8px; }
-    ul { padding-left: 20px; }
-    a { color: #E91E8C; text-decoration: none; }
-    hr { border: none; border-top: 1px solid #EEE; margin: 28px 0; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Privacy & Terms - LinkUp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #f8fafc;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* App-like feel: removing scrollbar */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 32px 32px 0 0;
+            padding: 24px;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.05);
+            min-height: 100vh;
+            margin-top: -20px;
+        }
+
+        .section-title {
+            color: #4f46e5;
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .list-item {
+            position: relative;
+            padding-left: 22px;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #475569;
+        }
+
+        .list-item::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 10px;
+            width: 6px;
+            height: 6px;
+            background-color: #6366f1;
+            border-radius: 50%;
+        }
+
+        .sub-section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 18px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        .sub-title {
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #fff1f2 0%, #fff5f5 100%);
+            border: 1px dashed #fb7185;
+            padding: 20px;
+            border-radius: 20px;
+            margin-top: 15px;
+        }
+
+        .developer-info {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid #f1f5f9;
+        }
+
+        header {
+            padding: 50px 24px 40px 24px;
+            background: linear-gradient(to bottom, #f1f5f9, #f8fafc);
+        }
+
+        .info-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .info-tag svg {
+            width: 14px;
+            height: 14px;
+            color: #94a3b8;
+        }
+    </style>
 </head>
 <body>
-  <h1>Privacy Policy</h1>
-  <p class="updated">Last updated: April 2026</p>
 
-  <p>Welcome to <strong>LinkUp</strong>. This Privacy Policy explains how we collect, use, and protect your information when you use our application.</p>
+    <header>
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight">Privacy & <br>Terms</h1>
+                <p class="text-indigo-600 font-semibold mt-1">LinkUp Messenger</p>
+            </div>
+            <div class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold">v1.0.0</div>
+        </div>
 
-  <h2>1. Information We Collect</h2>
-  <ul>
-    <li><strong>Account info:</strong> Your email address, username, and display name when you register.</li>
-    <li><strong>Profile photo:</strong> Stored as compressed base64 data directly in Firestore (no third-party storage).</li>
-    <li><strong>Messages:</strong> Text messages you send are stored in Firestore and are only accessible to the conversation participants.</li>
-    <li><strong>Usage data:</strong> Last seen timestamps to show activity status.</li>
-  </ul>
+        <!-- Developer Information Box -->
+        <div class="developer-info">
+            <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">ডেভলপার তথ্য</h3>
+            
+            <div class="grid grid-cols-1 gap-2">
+                <div class="info-tag">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    <span><strong>ডেভলপার:</strong> RI Nirob Sarkar (রাইসার জামাই)</span>
+                </div>
+                <div class="info-tag">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span><strong>দেশ:</strong> বাংলাদেশ 🇧🇩</span>
+                </div>
+                <div class="info-tag">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
+                    <span><strong>প্ল্যাটফর্ম:</strong> Flutter (Android), Firebase Backend</span>
+                </div>
+                <div class="info-tag">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span><strong>বিবরণ:</strong> সহজ ও মজার চ্যাট করার অ্যাপ</span>
+                </div>
+            </div>
+        </div>
+    </header>
 
-  <h2>2. How We Use Your Information</h2>
-  <ul>
-    <li>To provide and maintain the LinkUp chat service.</li>
-    <li>To authenticate your identity securely via Firebase Auth.</li>
-    <li>To display your profile to other users.</li>
-    <li>To deliver real-time messages between users.</li>
-  </ul>
+    <div class="content-card">
+        
+        <!-- ১. প্রাইভেসি পলিসি -->
+        <div class="mb-10">
+            <h2 class="section-title">
+                <div class="p-2 bg-indigo-50 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                </div>
+                ১. প্রাইভেসি পলিসি
+            </h2>
+            <p class="text-slate-500 mb-5 text-sm leading-relaxed px-1">
+                আমরা ব্যবহারকারীর ব্যক্তিগত ডেটা রক্ষা করতে প্রতিশ্রুতিবদ্ধ। এই পলিসি আপনার ডেটা কিভাবে সংগ্রহ, ব্যবহার ও সংরক্ষণ করা হবে তা বর্ণনা করে।
+            </p>
 
-  <h2>3. Data Storage</h2>
-  <p>All data is stored in <strong>Google Firebase Firestore</strong> in the <code>asia-southeast1</code> region. We do not use Firebase Storage — profile images are stored as compressed JPEG data within Firestore documents.</p>
+            <div class="sub-section">
+                <div class="sub-title">১.১ ডেটা সংগ্রহ</div>
+                <div class="list-item">আপনার নাম, ইউজারনেম, ইমেইল ঠিকানা এবং ফোন নম্বর।</div>
+                <div class="list-item">অ্যাপ ব্যবহার সম্পর্কিত তথ্য যেমন চ্যাট হিস্ট্রি, স্টিকার বা ইমোজি ব্যবহার।</div>
+                <div class="list-item">ডিভাইস সম্পর্কিত তথ্য (যেমন OS version, device type)।</div>
+            </div>
 
-  <h2>4. Data Sharing</h2>
-  <p>We do <strong>not</strong> sell, trade, or share your personal data with third parties. Your messages are private and only visible to you and the people you are chatting with.</p>
+            <div class="sub-section">
+                <div class="sub-title">১.২ ডেটার ব্যবহার</div>
+                <div class="list-item">অ্যাপের সঠিক কাজ নিশ্চিত করা।</div>
+                <div class="list-item">নতুন ফিচার উন্নয়ন ও ব্যবহারকারীর অভিজ্ঞতা বৃদ্ধি।</div>
+                <div class="list-item">স্প্যাম, আপত্তিকর কন্টেন্ট বা অবৈধ ব্যবহার প্রতিরোধ।</div>
+            </div>
 
-  <h2>5. Data Security</h2>
-  <p>We use Firestore Security Rules to ensure users can only access their own data and conversations they are part of. All communications are encrypted in transit.</p>
+            <div class="sub-section">
+                <div class="sub-title">১.৩ ডেটার শেয়ার</div>
+                <div class="list-item">আমরা আপনার ব্যক্তিগত ডেটা কোনো তৃতীয় পক্ষের সাথে শেয়ার করি না।</div>
+                <div class="list-item">শুধু লিগ্যাল বা নীতিমালা অনুযায়ী প্রয়োজন হলে শেয়ার করা হতে পারে।</div>
+            </div>
 
-  <h2>6. Your Rights</h2>
-  <ul>
-    <li>You may delete your account at any time from Profile → Settings → Delete Account.</li>
-    <li>Account deletion removes your profile data from Firestore.</li>
-    <li>You may export your data from Profile → Settings → Export Data.</li>
-  </ul>
+            <div class="sub-section">
+                <div class="sub-title">১.৪ ব্যবহারকারীর অধিকার</div>
+                <div class="list-item">আপনার ডেটা এক্সেস করতে পারবেন।</div>
+                <div class="list-item">চাইলে ডেটা মুছে ফেলার অনুরোধ করতে পারবেন।</div>
+                <div class="list-item">অ্যাপ ব্যবহার বন্ধ করলে ডেটা সংরক্ষণ বা মুছে ফেলার নির্দেশ দিতে পারবেন।</div>
+            </div>
+        </div>
 
-  <h2>7. Children's Privacy</h2>
-  <p>LinkUp is not intended for children under 13. We do not knowingly collect data from children.</p>
+        <!-- ২. টার্মস অ্যান্ড কন্ডিশনস -->
+        <div class="mb-10">
+            <h2 class="section-title">
+                <div class="p-2 bg-indigo-50 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                </div>
+                ২. টার্মস অ্যান্ড কন্ডিশনস
+            </h2>
+            <p class="text-slate-500 mb-5 text-sm leading-relaxed px-1">
+                এই নীতিমালা LinkUp অ্যাপ ব্যবহার করার সময় আপনার এবং অ্যাপের মধ্যে আইনগত চুক্তি হিসেবে প্রযোজ্য।
+            </p>
 
-  <h2>8. Changes to This Policy</h2>
-  <p>We may update this Privacy Policy from time to time. Changes will be reflected in the "Last updated" date above.</p>
+            <div class="sub-section">
+                <div class="sub-title">২.১ অ্যাপ ব্যবহার</div>
+                <div class="list-item">অ্যাপটি বৈধ এবং নৈতিক কাজে ব্যবহার করতে হবে।</div>
+                <div class="list-item">অন্য ব্যবহারকারীর প্রতি অসম্মানজনক বা অবৈধ আচরণ থেকে বিরত থাকতে হবে।</div>
+            </div>
 
-  <hr/>
-  <p>For questions, contact us at <a href="mailto:support@linkup.app">support@linkup.app</a></p>
+            <div class="sub-section">
+                <div class="sub-title">২.২ অ্যাকাউন্ট ও নিরাপত্তা</div>
+                <div class="list-item">প্রতিটি ব্যবহারকারী নিজের অ্যাকাউন্টের নিরাপত্তার দায়িত্ব নিজে নেবে।</div>
+                <div class="list-item">কোনো ধরনের হ্যাকিং বা অনুমোদনবিহীন প্রবেশ নিষিদ্ধ।</div>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-title">২.৩ কপিরাইট ও ইন্টেলেকচুয়াল প্রপার্টি</div>
+                <div class="list-item">অ্যাপের সকল কনটেন্ট, স্টিকার, লোগো ও কোড LinkUp এর প্রপার্টি।</div>
+                <div class="list-item">ব্যবহারকারীরা কপিরাইট ভঙ্গ করতে পারবে না।</div>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-title">২.৪ দায়ভার ও দায়মুক্তি</div>
+                <div class="list-item">অ্যাপ ব্যবহারে কোনো ক্ষতি হলে LinkUp দায়ী নয়।</div>
+                <div class="list-item">আমরা কেবল সরবরাহকৃত পরিষেবা অনুযায়ী সীমিত দায়িত্ব গ্রহণ করি।</div>
+            </div>
+
+            <!-- বিশেষ নিয়ম - সিঙ্গেল মোড -->
+            <div class="highlight-box">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-2xl">⚡</span>
+                    <div class="font-bold text-rose-600 text-lg">২.৫ সিঙ্গেলদের জন্য বিশেষ নিয়ম</div>
+                </div>
+                <div class="space-y-3">
+                    <div class="text-sm text-rose-800 leading-relaxed">• ভেরিফাই ব্যাজের জন্য আপনার অবশ্যই একজন প্রেমিক/প্রেমিকা থাকতে হবে।</div>
+                    <div class="text-sm text-rose-800 leading-relaxed">• প্রেমিক/প্রেমিকা না থাকলে আপনাকে <strong>“Single Mode User”</strong> হিসেবে বিবেচনা করা হবে।</div>
+                    <div class="text-sm text-rose-800 leading-relaxed">• প্রেমিক/প্রেমিকা না থাকলে রাত ১২টার পর অ্যাপের এন্ট্রি সীমিত হতে পারে।</div>
+                    <div class="bg-rose-100 p-3 rounded-xl text-xs font-bold text-rose-900 border border-rose-200">
+                        রাত ১২টার পর চ্যাটে মিষ্টি ইমোজি 😘💖 ব্যবহার না করলে সার্ভার “Single Detected” নোটিফিকেশন দেখাতে পারে।
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ৩. চূড়ান্ত ধারা -->
+        <div class="mb-12">
+            <h2 class="section-title">
+                <div class="p-2 bg-indigo-50 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </div>
+                ৩. চূড়ান্ত ধারা
+            </h2>
+            <div class="bg-indigo-600 text-white p-5 rounded-2xl text-sm leading-relaxed shadow-lg shadow-indigo-100">
+                Privacy & Terms যেকোনো সময়ে আপডেট হতে পারে। আপডেটের পর অ্যাপ ব্যবহার অব্যাহত রাখলে আপনি নতুন নীতিমালার সাথে সম্মত বিবেচিত হবেন।
+            </div>
+        </div>
+
+        <div class="text-center pb-12">
+            <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-2">সর্বশেষ আপডেট: <span id="currentMonthYear"></span></p>
+            <p class="text-xs text-slate-500 font-medium">© <span id="currentYear"></span> LinkUp Messenger</p>
+            <p class="text-[10px] text-indigo-400 mt-1 italic">Made by RI Nirob Sarkar</p>
+        </div>
+    </div>
+
+    <script>
+        function updateDynamicDates() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const monthNames = [
+                "জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন",
+                "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"
+            ];
+            
+            const convertToBanglaNum = (num) => {
+                const banglaNums = {'0':'০', '1':'১', '2':'২', '3':'৩', '4':'৪', '5':'৫', '6':'৬', '7':'৭', '8':'৮', '9':'৯'};
+                return num.toString().split('').map(char => banglaNums[char] || char).join('');
+            };
+
+            const currentMonth = monthNames[now.getMonth()];
+            const banglaYear = convertToBanglaNum(year);
+
+            document.getElementById('currentYear').innerText = banglaYear;
+            document.getElementById('currentMonthYear').innerText = currentMonth + " " + banglaYear;
+        }
+
+        window.onload = updateDynamicDates;
+    </script>
 </body>
 </html>

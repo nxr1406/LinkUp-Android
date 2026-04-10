@@ -38,6 +38,10 @@ class _ChatScreenState extends State<ChatScreen> {
   Timer? _typingTimer;
   bool _isTyping = false;
 
+  // Scroll — track previous message count to scroll only on new messages
+  int _prevMsgCount = 0;
+  bool _initialScrollDone = false;
+
   @override
   void initState() {
     super.initState();
@@ -139,14 +143,23 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool animate = true}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollCtrl.hasClients) {
-        _scrollCtrl.animateTo(
-          _scrollCtrl.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+      if (!_scrollCtrl.hasClients) return;
+      final pos = _scrollCtrl.position;
+      // Only auto-scroll if user is already near the bottom (within 200px)
+      final nearBottom = pos.maxScrollExtent - pos.pixels < 200;
+      if (nearBottom || !_initialScrollDone) {
+        if (animate && _initialScrollDone) {
+          _scrollCtrl.animateTo(
+            pos.maxScrollExtent,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+          );
+        } else {
+          _scrollCtrl.jumpTo(pos.maxScrollExtent);
+          _initialScrollDone = true;
+        }
       }
     });
   }
@@ -327,8 +340,13 @@ class _ChatScreenState extends State<ChatScreen> {
                               fontSize: 16)),
                     );
                   }
-                  WidgetsBinding.instance
-                      .addPostFrameCallback((_) => _scrollToBottom());
+
+                  // Scroll only when message count increases (new message arrived)
+                  // or on first load — NOT on every typing/chat stream update
+                  if (!_initialScrollDone || messages.length > _prevMsgCount) {
+                    _prevMsgCount = messages.length;
+                    _scrollToBottom(animate: _initialScrollDone);
+                  }
 
                   // Seen status: last message seen by other
                   final otherSeenAt =
@@ -347,17 +365,13 @@ class _ChatScreenState extends State<ChatScreen> {
                               _formatDateHeader(
                                   messages[index - 1].timestamp);
 
-                      // Seen indicator: show under the LAST message sent by me
-                      // that was seen by the other person
-                      final isLastMyMsg = isMe &&
+                      // isLastMyMsg: this is the last message sent by ME in the list
+                      final isLastMyMsg = isMe && (
                           index == messages.length - 1 ||
-                          (isMe &&
-                              index < messages.length - 1 &&
-                              messages
-                                  .sublist(index + 1)
-                                  .every((m) => m.senderId != widget.currentUid));
-                      final showSeen = isMe &&
-                          isLastMyMsg &&
+                          messages.sublist(index + 1)
+                              .every((m) => m.senderId != widget.currentUid)
+                      );
+                      final showSeen = isLastMyMsg &&
                           otherSeenAt != null &&
                           otherSeenAt.isAfter(msg.timestamp);
 
@@ -1086,12 +1100,7 @@ class _MessageBubble extends StatelessWidget {
               ),
             ),
 
-          // Seen avatar below last sent message
-          if (showSeen)
-            Padding(
-              padding: const EdgeInsets.only(right: 4, bottom: 4),
-              child: AvatarWidget(user: otherUser, radius: 8),
-            ),
+          // (Seen avatar shown inside bubble via _MessageStatusIcon)
         ],
       ),
     );
@@ -1099,6 +1108,9 @@ class _MessageBubble extends StatelessWidget {
 }
 
 // ── Message status icon ────────────────────────────────────────────────────────
+// Priority: showSeen > message.status
+// showSeen = otherUser has seen this specific message (real-time from seenBy)
+// message.status = 'sending'|'sent'|'delivered'|'seen'|'error'
 class _MessageStatusIcon extends StatelessWidget {
   final String status;
   final bool showSeen;
@@ -1112,12 +1124,12 @@ class _MessageStatusIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Seen → show other user's profile pic (tiny circle)
-    if (showSeen || status == 'seen') {
+    // Seen: show tiny profile pic of the other person
+    if (showSeen) {
       return ClipOval(
         child: SizedBox(
-          width: 14,
-          height: 14,
+          width: 13,
+          height: 13,
           child: AvatarWidget(user: otherUser, radius: 7),
         ),
       );
@@ -1125,22 +1137,25 @@ class _MessageStatusIcon extends StatelessWidget {
 
     switch (status) {
       case 'sending':
-        // Single hollow tick — being sent
-        return Icon(Icons.done,
-            size: 13, color: Colors.white.withOpacity(0.5));
+        // Clock/single faint tick — not yet on server
+        return Icon(Icons.access_time_rounded,
+            size: 11, color: Colors.white.withOpacity(0.5));
       case 'delivered':
-        // Double filled tick — delivered to device
+        // Double blue ticks — received on device
         return Icon(Icons.done_all,
-            size: 13, color: Colors.white.withOpacity(0.9));
+            size: 13, color: Colors.lightBlueAccent.withOpacity(0.9));
+      case 'seen':
+        // Double blue ticks (fallback if showSeen not set yet)
+        return Icon(Icons.done_all,
+            size: 13, color: Colors.lightBlueAccent);
       case 'error':
-        // Red cross — failed
         return const Icon(Icons.error_outline,
-            size: 13, color: Colors.redAccent);
+            size: 12, color: Colors.redAccent);
       case 'sent':
       default:
-        // Single tick — reached server
-        return Icon(Icons.check,
-            size: 13, color: Colors.white.withOpacity(0.7));
+        // Single white tick — reached server
+        return Icon(Icons.done,
+            size: 13, color: Colors.white.withOpacity(0.75));
     }
   }
 }
