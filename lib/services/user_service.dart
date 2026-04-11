@@ -213,7 +213,13 @@ class UserService {
   }
 
   Future<void> setAdminStatus(String uid, bool isAdmin) async {
-    await _firestore.collection('users').doc(uid).update({'isAdmin': isAdmin, 'role': isAdmin ? 'admin' : 'user'});
+    await _firestore.collection('users').doc(uid).update(
+        {'isAdmin': isAdmin, 'role': isAdmin ? 'admin' : 'user'});
+  }
+
+  Future<void> setVerified(String uid, bool isVerified) async {
+    await _firestore.collection('users').doc(uid).update(
+        {'isVerified': isVerified});
   }
 
   Future<void> deleteUserData(String uid) async {

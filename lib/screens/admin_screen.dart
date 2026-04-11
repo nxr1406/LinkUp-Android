@@ -344,12 +344,10 @@ class _UsersTab extends StatelessWidget {
                       await userService.setAdminStatus(user.uid, false);
                       break;
                     case 'verify':
-                      await userService.reviewVerification(
-                        requestId: '',
-                        userId: user.uid,
-                        approve: true,
-                        reviewerId: me,
-                      );
+                      await userService.setVerified(user.uid, true);
+                      break;
+                    case 'unverify':
+                      await userService.setVerified(user.uid, false);
                       break;
                   }
                 },
@@ -374,7 +372,14 @@ class _UsersTab extends StatelessWidget {
                         child: Text('Remove Admin')),
                   if (!user.isVerified)
                     const PopupMenuItem(
-                        value: 'verify', child: Text('Verify')),
+                        value: 'verify',
+                        child: Text('Verify',
+                            style: TextStyle(color: Colors.green)))
+                  else
+                    const PopupMenuItem(
+                        value: 'unverify',
+                        child: Text('Remove Verified',
+                            style: TextStyle(color: Colors.orange))),
                 ],
                 icon: const Icon(Icons.more_vert, color: AppColors.grey),
               ),

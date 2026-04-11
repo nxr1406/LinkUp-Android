@@ -150,13 +150,21 @@ class ChatService {
     required String chatId,
     required String messageId,
   }) async {
-    // Unsent = visible placeholder "Message was unsent"
-    await _firestore
+    final batch = _firestore.batch();
+
+    // Mark message as unsent
+    final msgRef = _firestore
         .collection('chats')
         .doc(chatId)
         .collection('messages')
-        .doc(messageId)
-        .update({'isUnsent': true, 'text': ''});
+        .doc(messageId);
+    batch.update(msgRef, {'isUnsent': true, 'text': ''});
+
+    // Update chat lastMessage so home screen shows correct preview
+    final chatRef = _firestore.collection('chats').doc(chatId);
+    batch.update(chatRef, {'lastMessage': 'Message was unsent'});
+
+    await batch.commit();
   }
 
   Future<void> deleteMessage({

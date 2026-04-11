@@ -319,7 +319,8 @@ class _ChatScreenState extends State<ChatScreen> {
               child: StreamBuilder<List<MessageModel>>(
                 stream: _chatService.getMessages(widget.chatId),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  // Only show loader on very first load (no data yet at all)
+                  if (!snapshot.hasData && snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
                         child: CircularProgressIndicator(
                             color: AppColors.primary));

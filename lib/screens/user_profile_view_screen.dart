@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../services/chat_service.dart';
 import '../services/user_service.dart';
@@ -33,10 +34,58 @@ class UserProfileViewScreen extends StatelessWidget {
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
-              IconButton(
-                icon:
-                    Icon(Icons.more_horiz, color: AppColors.textPrimary(dark)),
-                onPressed: () {},
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_horiz, color: AppColors.textPrimary(dark)),
+                onSelected: (val) async {
+                  if (val == 'block') {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Block user?'),
+                        content: Text(
+                            'Block @\${user.username}? They won't be able to message you.'),
+                        actions: [
+                          TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel')),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red),
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Block',
+                                style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(me.uid)
+                          .update({
+                        'blockedUsers': FieldValue.arrayUnion([user.uid])
+                      });
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('@\${user.username} blocked'),
+                          backgroundColor: Colors.red.shade700,
+                          behavior: SnackBarBehavior.floating,
+                        ));
+                        Navigator.pop(context);
+                      }
+                    }
+                  }
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'block',
+                    child: Row(children: const [
+                      Icon(Icons.block, color: Colors.red, size: 18),
+                      SizedBox(width: 8),
+                      Text('Block', style: TextStyle(color: Colors.red)),
+                    ]),
+                  ),
+                ],
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
