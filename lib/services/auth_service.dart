@@ -62,8 +62,9 @@ class AuthService {
         email: email, password: password);
     final uid = cred.user!.uid;
 
-    // ── Step 2: lastSeen update (non-blocking) ─────────────────
+    // ── Step 2: online status + lastSeen ─────────────────────────
     _db.collection('users').doc(uid).update({
+      'isOnline': true,
       'lastSeen': FieldValue.serverTimestamp(),
     }).catchError((_) {});
 
@@ -91,11 +92,32 @@ class AuthService {
     try {
       if (_auth.currentUser != null) {
         await _db.collection('users').doc(_auth.currentUser!.uid).update({
+          'isOnline': false,
           'lastSeen': FieldValue.serverTimestamp(),
         });
       }
     } catch (_) {}
     await _auth.signOut();
+  }
+
+  /// Call on app resume / foreground
+  Future<void> setOnline(String uid) async {
+    try {
+      await _db.collection('users').doc(uid).update({
+        'isOnline': true,
+        'lastSeen': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {}
+  }
+
+  /// Call on app pause / background / dispose
+  Future<void> setOffline(String uid) async {
+    try {
+      await _db.collection('users').doc(uid).update({
+        'isOnline': false,
+        'lastSeen': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {}
   }
 
   Future<void> sendPasswordReset(String email) async {

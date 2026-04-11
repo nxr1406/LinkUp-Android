@@ -4,6 +4,7 @@ import '../models/chat_model.dart';
 import '../models/user_model.dart';
 import '../services/chat_service.dart';
 import '../services/user_service.dart';
+import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/avatar_widget.dart';
 import 'chat_screen.dart';
@@ -18,10 +19,36 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   final _currentUser = FirebaseAuth.instance.currentUser!;
   final _userService = UserService();
+  final _authService = AuthService();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _authService.setOnline(_currentUser.uid);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _authService.setOffline(_currentUser.uid);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _authService.setOnline(_currentUser.uid);
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.inactive) {
+      _authService.setOffline(_currentUser.uid);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -5,6 +5,7 @@ class UserModel {
   final String email;
   final String? photoBase64;
   final String? bio;
+  final bool isOnline;
   final bool isVerified;
   final bool isAdmin;
   final bool isSuspended;
@@ -19,6 +20,7 @@ class UserModel {
     required this.email,
     this.photoBase64,
     this.bio,
+    this.isOnline = false,
     this.isVerified = false,
     this.isAdmin = false,
     this.isSuspended = false,
@@ -39,6 +41,7 @@ class UserModel {
       email: map['email'] ?? '',
       photoBase64: map['photoBase64'],
       bio: map['bio'],
+      isOnline: map['isOnline'] ?? false,
       isVerified: map['isVerified'] ?? false,
       isAdmin: roleIsAdmin || legacyIsAdmin,
       isSuspended: map['isSuspended'] ?? false,
@@ -59,6 +62,7 @@ class UserModel {
       'email': email,
       'photoBase64': photoBase64,
       'bio': bio,
+      'isOnline': isOnline,
       'isVerified': isVerified,
       'isAdmin': isAdmin,
       'isSuspended': isSuspended,
@@ -73,6 +77,7 @@ class UserModel {
     String? username,
     String? photoBase64,
     String? bio,
+    bool? isOnline,
     bool? isVerified,
     bool? isAdmin,
     bool? isSuspended,
@@ -86,6 +91,7 @@ class UserModel {
       email: email,
       photoBase64: photoBase64 ?? this.photoBase64,
       bio: bio ?? this.bio,
+      isOnline: isOnline ?? this.isOnline,
       isVerified: isVerified ?? this.isVerified,
       isAdmin: isAdmin ?? this.isAdmin,
       isSuspended: isSuspended ?? this.isSuspended,

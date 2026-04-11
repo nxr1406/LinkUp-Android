@@ -883,34 +883,68 @@ class _LastSeenText extends StatelessWidget {
   final bool dark;
   const _LastSeenText({required this.user, required this.dark});
 
-  String _format(DateTime lastSeen) {
-    final diff = DateTime.now().difference(lastSeen);
-    if (diff.inSeconds < 60) return 'Active now';
-    if (diff.inMinutes < 60) return 'Active ${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return 'Active ${diff.inHours}h ago';
-    if (diff.inDays == 1) return 'Active yesterday';
-    return 'Active ${diff.inDays}d ago';
+  String _formatLastSeen(DateTime lastSeen) {
+    // Use server time comparison to avoid device clock mismatch
+    final now = DateTime.now();
+    final diff = now.difference(lastSeen);
+
+    if (diff.inSeconds < 30) return 'Online now';
+    if (diff.inMinutes < 1) return 'Last seen just now';
+    if (diff.inMinutes < 60) return 'Last seen ${diff.inMinutes}m ago';
+
+    // Compare calendar days (not 24h window) to avoid "yesterday" vs "today" bug
+    final today = DateTime(now.year, now.month, now.day);
+    final seenDay = DateTime(lastSeen.year, lastSeen.month, lastSeen.day);
+    final dayDiff = today.difference(seenDay).inDays;
+
+    final hh = lastSeen.hour.toString().padLeft(2, '0');
+    final mm = lastSeen.minute.toString().padLeft(2, '0');
+    final timeStr = '$hh:$mm';
+
+    if (dayDiff == 0) return 'Last seen today at $timeStr';
+    if (dayDiff == 1) return 'Last seen yesterday at $timeStr';
+    return 'Last seen ${lastSeen.day}/${lastSeen.month}/${lastSeen.year}';
   }
 
   @override
   Widget build(BuildContext context) {
     if (user == null) return const SizedBox.shrink();
-    // Stream live lastSeen from Firestore
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection('users')
           .doc(user!.uid)
           .snapshots(),
       builder: (_, snap) {
-        DateTime? lastSeen;
-        if (snap.hasData && snap.data!.exists) {
-          final raw = (snap.data!.data() as Map<String, dynamic>?)?['lastSeen'];
-          if (raw != null) lastSeen = (raw as dynamic).toDate();
+        if (!snap.hasData || !snap.data!.exists) return const SizedBox.shrink();
+        final data = snap.data!.data() as Map<String, dynamic>?;
+        final isOnline = data?['isOnline'] == true;
+
+        // Online now — show green dot + text
+        if (isOnline) {
+          return Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 7, height: 7,
+              decoration: const BoxDecoration(
+                color: Color(0xFF4CD964),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text('Online now',
+                style: TextStyle(
+                    color: const Color(0xFF4CD964),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500)),
+          ]);
         }
-        lastSeen ??= user!.lastSeen;
-        if (lastSeen == null) return const SizedBox.shrink();
+
+        // Offline — show last seen with correct calendar day
+        final rawTs = data?['lastSeen'];
+        if (rawTs == null) return const SizedBox.shrink();
+        final lastSeen = (rawTs as dynamic).toDate() as DateTime;
+
         return Text(
-          _format(lastSeen),
+          _formatLastSeen(lastSeen),
           style: TextStyle(color: AppColors.textSecondary(dark), fontSize: 11),
         );
       },
