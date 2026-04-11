@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
 
@@ -239,9 +240,32 @@ class ChatService {
     required String targetUid,
     required String nickname,
   }) async {
-    await _firestore.collection('chats').doc(chatId).update({
-      'nicknames.$targetUid': nickname,
-    });
+    await _firestore.collection('chats').doc(chatId).set(
+      {'nicknames': {targetUid: nickname}},
+      SetOptions(merge: true),
+    );
+  }
+
+  Future<void> setChatSetting({
+    required String chatId,
+    required String uid,
+    required String key,   // 'readReceipts' | 'typingIndicator'
+    required bool value,
+  }) async {
+    await _firestore.collection('chats').doc(chatId).set(
+      {'settings': {uid: {key: value}}},
+      SetOptions(merge: true),
+    );
+  }
+
+  Future<void> blockUserFromChat({
+    required String myUid,
+    required String otherUid,
+  }) async {
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(myUid)
+        .update({'blockedUsers': FieldValue.arrayUnion([otherUid])});
   }
 
   String getChatId(String uid1, String uid2) => _chatId(uid1, uid2);

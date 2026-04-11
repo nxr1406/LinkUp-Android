@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/message_model.dart';
@@ -77,7 +78,13 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  ChatModel? _currentChat;
+
   Future<void> _markRead() async {
+    // Only send read receipt if readReceipts setting is enabled (default true)
+    final readReceiptsOn =
+        _currentChat?.settings[widget.currentUid]?['readReceipts'] ?? true;
+    if (!readReceiptsOn) return;
     try {
       await _chatService.markMessagesRead(
           chatId: widget.chatId, userId: widget.currentUid);
@@ -227,6 +234,39 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  void _showChatInfoSheet(ChatModel? chat) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.cardBg(dark),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => _ChatInfoSheet(
+        dark: dark,
+        chat: chat,
+        chatId: widget.chatId,
+        currentUid: widget.currentUid,
+        otherUser: widget.otherUser,
+        chatService: _chatService,
+        onNickname: () {
+          Navigator.pop(context);
+          _showNicknameDialog(chat);
+        },
+        onViewProfile: () {
+          Navigator.pop(context);
+          if (widget.otherUser != null) {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) =>
+                        UserProfileViewScreen(user: widget.otherUser!)));
+          }
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -235,9 +275,18 @@ class _ChatScreenState extends State<ChatScreen> {
       stream: _chatService.chatStream(widget.chatId),
       builder: (context, chatSnap) {
         final chat = chatSnap.data;
+        // Keep _currentChat updated for settings checks
+        if (chat != null && chat != _currentChat) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _currentChat = chat;
+          });
+        }
         final otherNick = chat?.nicknames[widget.otherUser?.uid ?? ''];
+        // Respect OTHER person's typingIndicator setting
+        final otherTypingEnabled =
+            chat?.settings[widget.otherUser?.uid ?? '']?['typingIndicator'] ?? true;
         final isOtherTyping =
-            chat?.typing[widget.otherUser?.uid ?? ''] == true;
+            otherTypingEnabled && chat?.typing[widget.otherUser?.uid ?? ''] == true;
 
         return Scaffold(
           appBar: AppBar(
@@ -294,23 +343,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             actions: [
               IconButton(
-                icon: Icon(Icons.edit_note,
-                    color: AppColors.textPrimary(dark), size: 24),
-                tooltip: 'Set Nickname',
-                onPressed: () => _showNicknameDialog(chat),
-              ),
-              IconButton(
                 icon: Icon(Icons.info_outline,
                     color: AppColors.textPrimary(dark)),
-                onPressed: () {
-                  if (widget.otherUser != null) {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => UserProfileViewScreen(
-                                user: widget.otherUser!)));
-                  }
-                },
+                onPressed: () => _showChatInfoSheet(chat),
               ),
             ],
           ),
@@ -848,23 +883,38 @@ class _LastSeenText extends StatelessWidget {
   final bool dark;
   const _LastSeenText({required this.user, required this.dark});
 
+  String _format(DateTime lastSeen) {
+    final diff = DateTime.now().difference(lastSeen);
+    if (diff.inSeconds < 60) return 'Active now';
+    if (diff.inMinutes < 60) return 'Active ${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return 'Active ${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'Active yesterday';
+    return 'Active ${diff.inDays}d ago';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final lastSeen = user?.lastSeen;
-    if (lastSeen == null) return const SizedBox.shrink();
-    final diff = DateTime.now().difference(lastSeen);
-    String status;
-    if (diff.inMinutes < 5) {
-      status = 'Active now';
-    } else if (diff.inMinutes < 60) {
-      status = 'Active ${diff.inMinutes}m ago';
-    } else if (diff.inHours < 24) {
-      status = 'Active ${diff.inHours}h ago';
-    } else {
-      status = 'Active ${diff.inDays}d ago';
-    }
-    return Text(status,
-        style: TextStyle(color: AppColors.textSecondary(dark), fontSize: 11));
+    if (user == null) return const SizedBox.shrink();
+    // Stream live lastSeen from Firestore
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .snapshots(),
+      builder: (_, snap) {
+        DateTime? lastSeen;
+        if (snap.hasData && snap.data!.exists) {
+          final raw = (snap.data!.data() as Map<String, dynamic>?)?['lastSeen'];
+          if (raw != null) lastSeen = (raw as dynamic).toDate();
+        }
+        lastSeen ??= user!.lastSeen;
+        if (lastSeen == null) return const SizedBox.shrink();
+        return Text(
+          _format(lastSeen),
+          style: TextStyle(color: AppColors.textSecondary(dark), fontSize: 11),
+        );
+      },
+    );
   }
 }
 
@@ -1104,9 +1154,7 @@ class _MessageBubble extends StatelessWidget {
 }
 
 // ── Message status icon ────────────────────────────────────────────────────────
-// Priority: showSeen > message.status
-// showSeen = otherUser has seen this specific message (real-time from seenBy)
-// message.status = 'sending'|'sent'|'delivered'|'seen'|'error'
+// sent = single tick | delivered = double tick | seen = cyan double tick | error = red i
 class _MessageStatusIcon extends StatelessWidget {
   final String status;
   final bool showSeen;
@@ -1118,40 +1166,486 @@ class _MessageStatusIcon extends StatelessWidget {
     this.otherUser,
   });
 
+  static const Color _cyan = Color(0xFF00FFFF);
+
   @override
   Widget build(BuildContext context) {
-    // Seen: show tiny profile pic of the other person
     if (showSeen) {
-      return ClipOval(
-        child: SizedBox(
-          width: 13,
-          height: 13,
-          child: AvatarWidget(user: otherUser, radius: 7),
-        ),
-      );
+      // Seen: cyan double tick
+      return const Icon(Icons.done_all, size: 13, color: _cyan);
     }
-
     switch (status) {
       case 'sending':
-        // Clock/single faint tick — not yet on server
         return Icon(Icons.access_time_rounded,
-            size: 11, color: Colors.white.withOpacity(0.5));
+            size: 11, color: Colors.white.withOpacity(0.45));
       case 'delivered':
-        // Double blue ticks — received on device
         return Icon(Icons.done_all,
-            size: 13, color: Colors.lightBlueAccent.withOpacity(0.9));
+            size: 13, color: Colors.white.withOpacity(0.9));
       case 'seen':
-        // Double blue ticks (fallback if showSeen not set yet)
-        return Icon(Icons.done_all,
-            size: 13, color: Colors.lightBlueAccent);
+        return const Icon(Icons.done_all, size: 13, color: _cyan);
       case 'error':
-        return const Icon(Icons.error_outline,
-            size: 12, color: Colors.redAccent);
+        // Red circle-i
+        return const Icon(Icons.info, size: 13, color: Colors.redAccent);
       case 'sent':
       default:
-        // Single white tick — reached server
         return Icon(Icons.done,
             size: 13, color: Colors.white.withOpacity(0.75));
     }
+  }
+}
+
+// ── Chat Info Bottom Sheet ─────────────────────────────────────────────────────
+class _ChatInfoSheet extends StatefulWidget {
+  final bool dark;
+  final ChatModel? chat;
+  final String chatId, currentUid;
+  final UserModel? otherUser;
+  final ChatService chatService;
+  final VoidCallback onNickname;
+  final VoidCallback onViewProfile;
+
+  const _ChatInfoSheet({
+    required this.dark,
+    required this.chat,
+    required this.chatId,
+    required this.currentUid,
+    required this.otherUser,
+    required this.chatService,
+    required this.onNickname,
+    required this.onViewProfile,
+  });
+
+  @override
+  State<_ChatInfoSheet> createState() => _ChatInfoSheetState();
+}
+
+class _ChatInfoSheetState extends State<_ChatInfoSheet> {
+  late bool _readReceipts;
+  late bool _typingIndicator;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = widget.chat?.settings[widget.currentUid];
+    _readReceipts = s?['readReceipts'] ?? true;
+    _typingIndicator = s?['typingIndicator'] ?? true;
+  }
+
+  Future<void> _setSetting(String key, bool value) async {
+    await widget.chatService.setChatSetting(
+      chatId: widget.chatId,
+      uid: widget.currentUid,
+      key: key,
+      value: value,
+    );
+  }
+
+  Future<void> _blockUser() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Block user?'),
+        content: Text(
+            "Block @${widget.otherUser?.username ?? ''}? They won't be able to message you."),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child:
+                const Text('Block', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      await widget.chatService.blockUserFromChat(
+        myUid: widget.currentUid,
+        otherUid: widget.otherUser?.uid ?? '',
+      );
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tc = AppColors.textPrimary(widget.dark);
+    final ts = AppColors.textSecondary(widget.dark);
+    final div = AppColors.divider(widget.dark);
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // Handle
+          Container(
+            width: 40, height: 4,
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+                color: div, borderRadius: BorderRadius.circular(2)),
+          ),
+
+          // Other user avatar + name
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            child: Row(children: [
+              AvatarWidget(user: widget.otherUser, radius: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(
+                    widget.otherUser?.displayName ?? '',
+                    style: TextStyle(
+                        color: tc,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16),
+                  ),
+                  Text('@${widget.otherUser?.username ?? ''}',
+                      style: TextStyle(color: ts, fontSize: 13)),
+                ]),
+              ),
+              TextButton(
+                onPressed: widget.onViewProfile,
+                child: Text('View Profile',
+                    style: TextStyle(
+                        color: AppColors.primary, fontSize: 13)),
+              ),
+            ]),
+          ),
+
+          Divider(color: div, height: 1),
+          const SizedBox(height: 4),
+
+          // Nickname option
+          ListTile(
+            leading: Icon(Icons.edit_outlined, color: tc, size: 22),
+            title: Text('Set Nickname', style: TextStyle(color: tc)),
+            subtitle: Text('Change display name in this chat',
+                style: TextStyle(color: ts, fontSize: 12)),
+            onTap: widget.onNickname,
+          ),
+
+          Divider(color: div, height: 1),
+
+          // Read Receipts toggle
+          ListTile(
+            leading: Icon(Icons.done_all, color: tc, size: 22),
+            title: Text('Read Receipts', style: TextStyle(color: tc)),
+            subtitle: Text('Show when you\'ve read messages',
+                style: TextStyle(color: ts, fontSize: 12)),
+            trailing: _CustomToggle(
+              value: _readReceipts,
+              onChanged: (v) {
+                setState(() => _readReceipts = v);
+                _setSetting('readReceipts', v);
+              },
+            ),
+          ),
+
+          // Typing Indicator toggle
+          ListTile(
+            leading: Icon(Icons.keyboard_outlined, color: tc, size: 22),
+            title: Text('Typing Indicator', style: TextStyle(color: tc)),
+            subtitle: Text('Show when you\'re typing',
+                style: TextStyle(color: ts, fontSize: 12)),
+            trailing: _CustomToggle(
+              value: _typingIndicator,
+              onChanged: (v) {
+                setState(() => _typingIndicator = v);
+                _setSetting('typingIndicator', v);
+              },
+            ),
+          ),
+
+          Divider(color: div, height: 1),
+
+          // Block
+          ListTile(
+            leading:
+                const Icon(Icons.block, color: Colors.redAccent, size: 22),
+            title: const Text('Block',
+                style: TextStyle(color: Colors.redAccent)),
+            subtitle: Text('Block this person from messaging you',
+                style: TextStyle(color: ts, fontSize: 12)),
+            onTap: _blockUser,
+          ),
+
+          const SizedBox(height: 12),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Custom iOS-style toggle ────────────────────────────────────────────────────
+class _CustomToggle extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _CustomToggle({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        width: 50,
+        height: 28,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          color: value ? const Color(0xFF4CD964) : const Color(0xFFD1D1D6),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            margin: const EdgeInsets.all(3),
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// ── Chat Info Bottom Sheet ─────────────────────────────────────────────────────
+class _ChatInfoSheet extends StatefulWidget {
+  final bool dark;
+  final ChatModel? chat;
+  final String chatId, currentUid;
+  final UserModel? otherUser;
+  final ChatService chatService;
+  final VoidCallback onNickname;
+  final VoidCallback onViewProfile;
+
+  const _ChatInfoSheet({
+    required this.dark,
+    required this.chat,
+    required this.chatId,
+    required this.currentUid,
+    required this.otherUser,
+    required this.chatService,
+    required this.onNickname,
+    required this.onViewProfile,
+  });
+
+  @override
+  State<_ChatInfoSheet> createState() => _ChatInfoSheetState();
+}
+
+class _ChatInfoSheetState extends State<_ChatInfoSheet> {
+  late bool _readReceipts;
+  late bool _typingIndicator;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = widget.chat?.settings[widget.currentUid];
+    _readReceipts = s?['readReceipts'] ?? true;
+    _typingIndicator = s?['typingIndicator'] ?? true;
+  }
+
+  Future<void> _setSetting(String key, bool value) async {
+    await widget.chatService.setChatSetting(
+      chatId: widget.chatId,
+      uid: widget.currentUid,
+      key: key,
+      value: value,
+    );
+  }
+
+  Future<void> _blockUser() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Block user?'),
+        content: Text(
+            "Block @${widget.otherUser?.username ?? ''}? They won't be able to message you."),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Block', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      await widget.chatService.blockUserFromChat(
+        myUid: widget.currentUid,
+        otherUid: widget.otherUser?.uid ?? '',
+      );
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tc = AppColors.textPrimary(widget.dark);
+    final ts = AppColors.textSecondary(widget.dark);
+    final div = AppColors.divider(widget.dark);
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 40, height: 4,
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+                color: div, borderRadius: BorderRadius.circular(2)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            child: Row(children: [
+              AvatarWidget(user: widget.otherUser, radius: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(widget.otherUser?.displayName ?? '',
+                      style: TextStyle(
+                          color: tc, fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text('@${widget.otherUser?.username ?? ''}',
+                      style: TextStyle(color: ts, fontSize: 13)),
+                ]),
+              ),
+              TextButton(
+                onPressed: widget.onViewProfile,
+                child: Text('View Profile',
+                    style: TextStyle(color: AppColors.primary, fontSize: 13)),
+              ),
+            ]),
+          ),
+          Divider(color: div, height: 1),
+          const SizedBox(height: 4),
+          ListTile(
+            leading: Icon(Icons.edit_outlined, color: tc, size: 22),
+            title: Text('Set Nickname', style: TextStyle(color: tc)),
+            subtitle: Text('Change display name in this chat',
+                style: TextStyle(color: ts, fontSize: 12)),
+            onTap: widget.onNickname,
+          ),
+          Divider(color: div, height: 1),
+          ListTile(
+            leading: Icon(Icons.done_all, color: tc, size: 22),
+            title: Text('Read Receipts', style: TextStyle(color: tc)),
+            subtitle: Text('Show when you've read messages',
+                style: TextStyle(color: ts, fontSize: 12)),
+            trailing: _CustomToggle(
+              value: _readReceipts,
+              onChanged: (v) {
+                setState(() => _readReceipts = v);
+                _setSetting('readReceipts', v);
+              },
+            ),
+          ),
+          ListTile(
+            leading: Icon(Icons.keyboard_outlined, color: tc, size: 22),
+            title: Text('Typing Indicator', style: TextStyle(color: tc)),
+            subtitle: Text('Show when you're typing',
+                style: TextStyle(color: ts, fontSize: 12)),
+            trailing: _CustomToggle(
+              value: _typingIndicator,
+              onChanged: (v) {
+                setState(() => _typingIndicator = v);
+                _setSetting('typingIndicator', v);
+              },
+            ),
+          ),
+          Divider(color: div, height: 1),
+          ListTile(
+            leading: const Icon(Icons.block, color: Colors.redAccent, size: 22),
+            title: const Text('Block', style: TextStyle(color: Colors.redAccent)),
+            subtitle: Text('Block this person from messaging you',
+                style: TextStyle(color: ts, fontSize: 12)),
+            onTap: _blockUser,
+          ),
+          const SizedBox(height: 12),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Custom iOS-style toggle (green on / grey off) ─────────────────────────────
+class _CustomToggle extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _CustomToggle({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        width: 50,
+        height: 28,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          color: value ? const Color(0xFF4CD964) : const Color(0xFFD1D1D6),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            margin: const EdgeInsets.all(3),
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -11,6 +11,8 @@ class ChatModel {
   final Map<String, DateTime?> seenBy;
   // typing: { uid: bool }
   final Map<String, bool> typing;
+  // settings: { uid: { 'readReceipts': bool, 'typingIndicator': bool } }
+  final Map<String, Map<String, bool>> settings;
 
   ChatModel({
     required this.id,
@@ -22,6 +24,7 @@ class ChatModel {
     this.nicknames = const {},
     this.seenBy = const {},
     this.typing = const {},
+    this.settings = const {},
   });
 
   factory ChatModel.fromMap(Map<String, dynamic> map, String id) {
@@ -39,6 +42,20 @@ class ChatModel {
         typingParsed[k.toString()] = v == true;
       });
     }
+    // Parse per-user settings
+    Map<String, Map<String, bool>> settingsParsed = {};
+    final rawSettings = map['settings'];
+    if (rawSettings is Map) {
+      rawSettings.forEach((k, v) {
+        if (v is Map) {
+          settingsParsed[k.toString()] = {
+            'readReceipts': v['readReceipts'] != false, // default true
+            'typingIndicator': v['typingIndicator'] != false,
+          };
+        }
+      });
+    }
+
     return ChatModel(
       id: id,
       participants: List<String>.from(map['participants'] ?? []),
@@ -51,6 +68,7 @@ class ChatModel {
       nicknames: Map<String, String>.from(map['nicknames'] ?? {}),
       seenBy: seenByParsed,
       typing: typingParsed,
+      settings: settingsParsed,
     );
   }
 
