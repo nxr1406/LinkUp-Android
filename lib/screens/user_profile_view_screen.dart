@@ -43,7 +43,7 @@ class UserProfileViewScreen extends StatelessWidget {
                       builder: (_) => AlertDialog(
                         title: const Text('Block user?'),
                         content: Text(
-                            'Block @\${user.username}? They won't be able to message you.'),
+                            "Block @${user.username}? They won't be able to message you."),
                         actions: [
                           TextButton(
                               onPressed: () => Navigator.pop(context, false),
