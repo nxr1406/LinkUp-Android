@@ -85,27 +85,33 @@ class ChatService {
     return chatId;
   }
 
-  /// Call this when the receiver opens the chat — marks all unread as 'delivered'
+  /// When receiver opens chat → mark sender's messages as 'delivered'
   Future<void> markDelivered({
     required String chatId,
     required String receiverUid,
   }) async {
+    // Only filter by status — no compound index needed
     final msgs = await _firestore
         .collection('chats')
         .doc(chatId)
         .collection('messages')
         .where('status', isEqualTo: 'sent')
-        .where('senderId', isNotEqualTo: receiverUid)
         .get();
 
-    if (msgs.docs.isEmpty) return;
+    // Filter in Dart: only messages sent by the OTHER person
+    final toUpdate = msgs.docs
+        .where((d) => d.data()['senderId'] != receiverUid)
+        .toList();
+
+    if (toUpdate.isEmpty) return;
     final batch = _firestore.batch();
-    for (final doc in msgs.docs) {
+    for (final doc in toUpdate) {
       batch.update(doc.reference, {'status': 'delivered'});
     }
     await batch.commit();
   }
 
+  /// When receiver reads messages → mark as 'seen'
   Future<void> markMessagesRead({
     required String chatId,
     required String userId,
@@ -117,18 +123,23 @@ class ChatService {
       'seenBy.$userId': FieldValue.serverTimestamp(),
     });
 
-    // Mark all delivered messages from the other person as 'seen'
-    final msgs = await _firestore
+    // Only mark 'delivered' → 'seen' (not 'sent' → 'seen')
+    // 'sent' → 'delivered' is handled separately by markDelivered()
+    final deliveredSnap = await _firestore
         .collection('chats')
         .doc(chatId)
         .collection('messages')
-        .where('status', whereIn: ['sent', 'delivered'])
-        .where('senderId', isNotEqualTo: userId)
+        .where('status', isEqualTo: 'delivered')
         .get();
 
-    if (msgs.docs.isEmpty) return;
+    // Filter in Dart to avoid composite index requirement
+    final toUpdate = deliveredSnap.docs
+        .where((d) => d.data()['senderId'] != userId)
+        .toList();
+
+    if (toUpdate.isEmpty) return;
     final batch = _firestore.batch();
-    for (final doc in msgs.docs) {
+    for (final doc in toUpdate) {
       batch.update(doc.reference, {'status': 'seen'});
     }
     await batch.commit();

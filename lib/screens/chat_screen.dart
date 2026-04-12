@@ -373,13 +373,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   // Scroll to bottom when new message arrives
                   // With reverse:true this just ensures we stay at offset 0
 
-                  // Seen status: last message seen by other
-                  final otherSeenAt =
-                      chat?.seenBy[widget.otherUser?.uid ?? ''];
-
-                  // reverse:true means newest messages at bottom visually,
-                  // list starts rendered at the bottom — no scroll needed on open
                   final reversed = messages.reversed.toList();
+
                   return ListView.builder(
                     controller: _scrollCtrl,
                     reverse: true,
@@ -389,22 +384,13 @@ class _ChatScreenState extends State<ChatScreen> {
                     itemBuilder: (context, index) {
                       final msg = reversed[index];
                       final isMe = msg.senderId == widget.currentUid;
-                      // In reversed list, previous message is index+1
                       final showDate = index == reversed.length - 1 ||
                           _formatDateHeader(msg.timestamp) !=
                               _formatDateHeader(
                                   reversed[index + 1].timestamp);
 
-                      // In reversed list, index==0 is the newest message
-                      // isLastMyMsg: newest message sent by me
-                      final isLastMyMsg = isMe && (
-                          index == 0 ||
-                          reversed.sublist(0, index)
-                              .every((m) => m.senderId != widget.currentUid)
-                      );
-                      final showSeen = isLastMyMsg &&
-                          otherSeenAt != null &&
-                          otherSeenAt.isAfter(msg.timestamp);
+                      // showSeen: ALL my messages with status='seen' show cyan tick
+                      final showSeen = isMe && msg.status == 'seen';
 
                       return Column(children: [
                         if (showDate)
