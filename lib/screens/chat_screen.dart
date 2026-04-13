@@ -175,6 +175,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _showMessageOptions(MessageModel msg, bool isMe, ChatModel? chat) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    // Capture ChatScreen's context BEFORE showing bottom sheet
+    final screenContext = context;
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.cardBg(dark),
@@ -196,6 +198,50 @@ class _ChatScreenState extends State<ChatScreen> {
           Navigator.pop(context);
           _forwardMessage(msg);
         },
+        // Pass ChatScreen context so dialog opens after sheet is fully closed
+        onEdit: () {
+          Navigator.pop(context);
+          // Wait for bottom sheet to finish closing before showing dialog
+          Future.delayed(const Duration(milliseconds: 150), () {
+            if (screenContext.mounted) {
+              _showEditDialogWithContext(screenContext, msg);
+            }
+          });
+        },
+      ),
+    );
+  }
+
+  void _showEditDialogWithContext(BuildContext ctx, MessageModel msg) {
+    final ctrl = TextEditingController(text: msg.text);
+    showDialog(
+      context: ctx,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Edit Message'),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 4,
+          minLines: 1,
+          autofocus: true,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () {
+              if (ctrl.text.trim().isEmpty) return;
+              _chatService.editMessage(
+                  chatId: widget.chatId,
+                  messageId: msg.id,
+                  newText: ctrl.text.trim());
+              Navigator.pop(dialogCtx);
+            },
+            child: const Text('Save', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
@@ -619,6 +665,7 @@ class _MessageOptionsSheet extends StatelessWidget {
   final ChatService chatService;
   final VoidCallback onReply;
   final VoidCallback onForward;
+  final VoidCallback onEdit;
 
   const _MessageOptionsSheet({
     required this.msg,
@@ -630,6 +677,7 @@ class _MessageOptionsSheet extends StatelessWidget {
     required this.chatService,
     required this.onReply,
     required this.onForward,
+    required this.onEdit,
   });
 
   @override
@@ -694,10 +742,7 @@ class _MessageOptionsSheet extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.edit_outlined),
             title: const Text('Edit'),
-            onTap: () {
-              Navigator.pop(context);
-              _showEditDialog(context);
-            },
+            onTap: onEdit,
           ),
           ListTile(
             leading: const Icon(Icons.remove_circle_outline,
@@ -723,42 +768,6 @@ class _MessageOptionsSheet extends StatelessWidget {
         ],
         const SizedBox(height: 8),
       ]),
-    );
-  }
-
-  void _showEditDialog(BuildContext context) {
-    final ctrl = TextEditingController(text: msg.text);
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Edit Message'),
-        content: TextField(
-          controller: ctrl,
-          maxLines: 4,
-          minLines: 1,
-          autofocus: true,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style:
-                ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () {
-              if (ctrl.text.trim().isEmpty) return;
-              chatService.editMessage(
-                  chatId: chatId,
-                  messageId: msg.id,
-                  newText: ctrl.text.trim());
-              Navigator.pop(context);
-            },
-            child: const Text('Save',
-                style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
     );
   }
 }

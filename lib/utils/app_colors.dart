@@ -5,8 +5,8 @@ class AppColors {
   static const Color primary      = Color(0xFFE91E8C);
   static const Color primaryLight = Color(0xFFF06292);
   static const Color primaryDark  = Color(0xFFC2185B);
-  static const Color verified     = Color(0xFFE91E8C);  // pink — same as primary
-  static const Color messageBubble = Color(0xFFE91E8C); // pink
+  static const Color verified     = Color(0xFFE91E8C);
+  static const Color messageBubble = Color(0xFFE91E8C);
 
   // ── Light theme ────────────────────────────────────────────────
   static const Color background   = Color(0xFFF5F5F5);
@@ -17,16 +17,16 @@ class AppColors {
   static const Color textDark     = Color(0xFF212121);
   static const Color textMedium   = Color(0xFF757575);
 
-  // ── Dark theme ─────────────────────────────────────────────────
-  static const Color darkBackground   = Color(0xFF0F0F14);
-  static const Color darkSurface      = Color(0xFF1A1A2E);
-  static const Color darkCard         = Color(0xFF232338);
-  static const Color darkAppBar       = Color(0xFF1A1A2E);
+  // ── Dark theme — pure black base ───────────────────────────────
+  static const Color darkBackground   = Color(0xFF000000); // pure black
+  static const Color darkSurface      = Color(0xFF0A0A0A); // near-black
+  static const Color darkCard         = Color(0xFF111111); // card
+  static const Color darkAppBar       = Color(0xFF000000); // pure black
   static const Color darkText         = Color(0xFFF0F0F0);
   static const Color darkTextMedium   = Color(0xFFAAAAAA);
-  static const Color darkDivider      = Color(0xFF2E2E45);
-  static const Color darkInputFill    = Color(0xFF232338);
-  static const Color darkBubbleOther  = Color(0xFF2A2A45);
+  static const Color darkDivider      = Color(0xFF1E1E1E);
+  static const Color darkInputFill    = Color(0xFF111111);
+  static const Color darkBubbleOther  = Color(0xFF1A1A1A);
 
   // ── Gradient ───────────────────────────────────────────────────
   static const List<Color> pinkGradient = [
@@ -43,5 +43,5 @@ class AppColors {
   static Color textSecondary(bool dark) => dark ? darkTextMedium : textMedium;
   static Color divider(bool dark)       => dark ? darkDivider : greyLight;
   static Color inputFill(bool dark)     => dark ? darkInputFill : white;
-  static Color bubbleOther(bool dark)   => dark ? darkBubbleOther : const Color(0xFFFCE4EC); // light pink tint
+  static Color bubbleOther(bool dark)   => dark ? darkBubbleOther : const Color(0xFFFCE4EC);
 }

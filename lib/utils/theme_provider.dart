@@ -60,17 +60,19 @@ class ThemeProvider extends ChangeNotifier {
         ),
       );
 
-  // ── Dark ThemeData ───────────────────────────────────────────
+  // ── Dark ThemeData — pure black ─────────────────────────────
   static ThemeData get darkTheme => ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFFE91E8C),
           brightness: Brightness.dark,
+          surface: const Color(0xFF0A0A0A),
+          onSurface: const Color(0xFFF0F0F0),
         ),
-        scaffoldBackgroundColor: const Color(0xFF0F0F14),
+        scaffoldBackgroundColor: const Color(0xFF000000),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1A1A2E),
+          backgroundColor: Color(0xFF000000),
           foregroundColor: Color(0xFFF0F0F0),
           elevation: 0,
           iconTheme: IconThemeData(color: Color(0xFFF0F0F0)),
@@ -80,22 +82,31 @@ class ThemeProvider extends ChangeNotifier {
             fontWeight: FontWeight.bold,
           ),
         ),
-        cardColor: const Color(0xFF232338),
-        dividerColor: const Color(0xFF2E2E45),
+        cardColor: const Color(0xFF111111),
+        dividerColor: const Color(0xFF1E1E1E),
         inputDecorationTheme: const InputDecorationTheme(
           filled: true,
-          fillColor: Color(0xFF232338),
+          fillColor: Color(0xFF111111),
           border: InputBorder.none,
         ),
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Color(0xFF1A1A2E),
+          backgroundColor: Color(0xFF000000),
           selectedItemColor: Color(0xFFF0F0F0),
           unselectedItemColor: Color(0xFF777777),
           elevation: 0,
         ),
         listTileTheme: const ListTileThemeData(
+          tileColor: Colors.transparent,
           textColor: Color(0xFFF0F0F0),
           iconColor: Color(0xFFF0F0F0),
+        ),
+        dialogTheme: const DialogThemeData(
+          backgroundColor: Color(0xFF111111),
+          surfaceTintColor: Colors.transparent,
+        ),
+        bottomSheetTheme: const BottomSheetThemeData(
+          backgroundColor: Color(0xFF111111),
+          surfaceTintColor: Colors.transparent,
         ),
       );
 }

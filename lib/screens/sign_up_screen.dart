@@ -35,7 +35,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> _signUp() async {
     FocusScope.of(context).unfocus();
-    if (!_agreePolicy) { _showError('Please agree to the privacy policy'); return; }
+    if (!_agreePolicy) { _showError('Please agree to the Privacy & Terms'); return; }
     if (_emailCtrl.text.trim().isEmpty ||
         _usernameCtrl.text.trim().isEmpty ||
         _displayNameCtrl.text.trim().isEmpty ||
@@ -166,7 +166,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            const Text('I agree with privacy policy',
+                            const Text('I agree with Privacy & Terms',
                                 style: TextStyle(
                                     color: AppColors.textMedium, fontSize: 14)),
                           ]),

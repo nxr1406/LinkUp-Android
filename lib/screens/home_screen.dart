@@ -113,6 +113,13 @@ class _ChatsTabState extends State<_ChatsTab> {
   final _chatService = ChatService();
   final _userService = UserService();
 
+  // Cache user futures so FutureBuilder doesn't re-fetch on every rebuild
+  final Map<String, Future<UserModel?>> _userFutureCache = {};
+
+  Future<UserModel?> _getCachedUser(String uid) {
+    return _userFutureCache.putIfAbsent(uid, () => _userService.getUser(uid));
+  }
+
   // Track which chatIds we've already triggered markDelivered for in this session
   final Set<String> _deliveredChatIds = {};
 
@@ -211,7 +218,7 @@ class _ChatsTabState extends State<_ChatsTab> {
                   (id) => id != _currentUser.uid,
                   orElse: () => '');
               return FutureBuilder<UserModel?>(
-                future: _userService.getUser(otherUid),
+                future: _getCachedUser(otherUid),
                 builder: (context, userSnap) {
                   final other = userSnap.data;
                   final unread = chat.unreadCount[_currentUser.uid] ?? 0;

@@ -315,7 +315,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
             Navigator.push(context, MaterialPageRoute(
                 builder: (_) => const NotificationSettingsScreen()));
           }),
-          _T(icon: Icons.security_outlined, label: 'Privacy Policy',
+          _T(icon: Icons.security_outlined, label: 'Privacy & Terms',
               dark: dark, onTap: () {
             Navigator.pop(context);
             Navigator.push(context, MaterialPageRoute(

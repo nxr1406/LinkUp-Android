@@ -27,7 +27,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Privacy Policy',
+          'Privacy & Terms',
           style: TextStyle(
             color: AppColors.textPrimary(dark),
             fontWeight: FontWeight.bold,
