@@ -85,6 +85,42 @@ class ChatService {
     return chatId;
   }
 
+  /// Called from HomeScreen when app is active — marks messages as 'delivered'
+  /// across ALL chats where the current user is a participant.
+  /// This ensures delivery ticks show even if the receiver never opens the chat.
+  Future<void> markAllChatsDelivered({required String receiverUid}) async {
+    try {
+      // Get all chats for this user
+      final chatsSnap = await _firestore
+          .collection('chats')
+          .where('participants', arrayContains: receiverUid)
+          .get();
+
+      for (final chatDoc in chatsSnap.docs) {
+        final chatId = chatDoc.id;
+        // Get all 'sent' messages in this chat
+        final msgs = await _firestore
+            .collection('chats')
+            .doc(chatId)
+            .collection('messages')
+            .where('status', isEqualTo: 'sent')
+            .get();
+
+        // Only update messages sent by the OTHER person (not by receiver)
+        final toUpdate =
+            msgs.docs.where((d) => d.data()['senderId'] != receiverUid).toList();
+
+        if (toUpdate.isEmpty) continue;
+
+        final batch = _firestore.batch();
+        for (final doc in toUpdate) {
+          batch.update(doc.reference, {'status': 'delivered'});
+        }
+        await batch.commit();
+      }
+    } catch (_) {}
+  }
+
   /// When receiver opens chat → mark sender's messages as 'delivered'
   Future<void> markDelivered({
     required String chatId,
@@ -123,8 +159,8 @@ class ChatService {
       'seenBy.$userId': FieldValue.serverTimestamp(),
     });
 
-    // Only mark 'delivered' → 'seen' (not 'sent' → 'seen')
-    // 'sent' → 'delivered' is handled separately by markDelivered()
+    // Mark both 'sent' AND 'delivered' → 'seen'
+    // (handles case where receiver opens chat before delivery tick fires)
     final deliveredSnap = await _firestore
         .collection('chats')
         .doc(chatId)
@@ -132,10 +168,17 @@ class ChatService {
         .where('status', isEqualTo: 'delivered')
         .get();
 
-    // Filter in Dart to avoid composite index requirement
-    final toUpdate = deliveredSnap.docs
-        .where((d) => d.data()['senderId'] != userId)
-        .toList();
+    final sentSnap = await _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .where('status', isEqualTo: 'sent')
+        .get();
+
+    // Combine both lists, filter in Dart (no compound index needed)
+    final allDocs = [...deliveredSnap.docs, ...sentSnap.docs];
+    final toUpdate =
+        allDocs.where((d) => d.data()['senderId'] != userId).toList();
 
     if (toUpdate.isEmpty) return;
     final batch = _firestore.batch();

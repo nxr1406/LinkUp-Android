@@ -9,6 +9,7 @@ import '../services/chat_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/avatar_widget.dart';
 import 'user_profile_view_screen.dart';
+import 'app_lock_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -44,9 +45,21 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _markRead();
-    _markDelivered();
+    // First deliver, then mark as seen — correct order
+    _markDeliveredThenRead();
     _msgCtrl.addListener(_onTextChanged);
+  }
+
+  /// Ensures correct flow: sent → delivered → seen
+  Future<void> _markDeliveredThenRead() async {
+    try {
+      // Step 1: mark any 'sent' messages as 'delivered'
+      await _chatService.markDelivered(
+          chatId: widget.chatId, receiverUid: widget.currentUid);
+      // Step 2: now mark everything (delivered + sent) as 'seen'
+      await _chatService.markMessagesRead(
+          chatId: widget.chatId, userId: widget.currentUid);
+    } catch (_) {}
   }
 
   void _onTextChanged() {
@@ -80,23 +93,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   ChatModel? _currentChat;
 
-  Future<void> _markRead() async {
-    // Only send read receipt if readReceipts setting is enabled (default true)
-    final readReceiptsOn =
-        _currentChat?.settings[widget.currentUid]?['readReceipts'] ?? true;
-    if (!readReceiptsOn) return;
-    try {
-      await _chatService.markMessagesRead(
-          chatId: widget.chatId, userId: widget.currentUid);
-    } catch (_) {}
-  }
-
-  Future<void> _markDelivered() async {
-    try {
-      await _chatService.markDelivered(
-          chatId: widget.chatId, receiverUid: widget.currentUid);
-    } catch (_) {}
-  }
 
   @override
   void dispose() {
@@ -1356,7 +1352,7 @@ class _ChatInfoSheetState extends State<_ChatInfoSheet> {
             title: Text('Read Receipts', style: TextStyle(color: tc)),
             subtitle: Text("Show when you've read messages",
                 style: TextStyle(color: ts, fontSize: 12)),
-            trailing: _CustomToggle(
+            trailing: LinkUpToggle(
               value: _readReceipts,
               onChanged: (v) {
                 setState(() => _readReceipts = v);
@@ -1371,7 +1367,7 @@ class _ChatInfoSheetState extends State<_ChatInfoSheet> {
             title: Text('Typing Indicator', style: TextStyle(color: tc)),
             subtitle: Text("Show when you're typing",
                 style: TextStyle(color: ts, fontSize: 12)),
-            trailing: _CustomToggle(
+            trailing: LinkUpToggle(
               value: _typingIndicator,
               onChanged: (v) {
                 setState(() => _typingIndicator = v);
@@ -1400,55 +1396,3 @@ class _ChatInfoSheetState extends State<_ChatInfoSheet> {
   }
 }
 
-// ── Custom iOS-style toggle ────────────────────────────────────────────────────
-class _CustomToggle extends StatelessWidget {
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _CustomToggle({required this.value, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onChanged(!value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        width: 50,
-        height: 28,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          color: value ? const Color(0xFF4CD964) : const Color(0xFFD1D1D6),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: AnimatedAlign(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            margin: const EdgeInsets.all(3),
-            width: 22,
-            height: 22,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

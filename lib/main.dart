@@ -6,6 +6,7 @@ import 'utils/theme_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/get_started_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/app_lock_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,7 +75,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
           return const SplashScreen();
         }
 
-        // Authenticated → Home
+        // Authenticated → Home (wrapped with App Lock)
         if (snapshot.hasData && snapshot.data != null) {
           // Reset status bar to light for home screen
           SystemChrome.setSystemUIOverlayStyle(
@@ -82,7 +83,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 ? SystemUiOverlayStyle.light
                 : SystemUiOverlayStyle.dark,
           );
-          return const HomeScreen();
+          return const AppLockWrapper(child: HomeScreen());
         }
 
         // Not authenticated → Get Started

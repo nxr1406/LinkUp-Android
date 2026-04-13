@@ -14,6 +14,7 @@ import 'edit_profile_screen.dart';
 import 'notification_settings_screen.dart';
 import 'privacy_screen.dart';
 import 'blocked_accounts_screen.dart';
+import 'app_lock_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserModel? me;
@@ -327,18 +328,20 @@ class _SettingsSheetState extends State<_SettingsSheet> {
                 builder: (_) => const BlockedAccountsScreen()));
           }),
 
+          // App Lock
+          AppLockSettingsTile(dark: dark),
+
           // Dark mode toggle
           ListTile(
             leading: Icon(Icons.dark_mode_outlined, color: tc, size: 22),
             title: Text('Dark Mode',
                 style: TextStyle(color: tc, fontSize: 15)),
-            trailing: Switch(
+            trailing: LinkUpToggle(
               value: _darkMode,
               onChanged: (v) {
                 setState(() => _darkMode = v);
                 LinkUpApp.toggleTheme();
               },
-              activeColor: AppColors.primary,
             ),
           ),
 

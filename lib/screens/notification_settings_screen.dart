@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/app_colors.dart';
+import 'app_lock_screen.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -162,10 +163,9 @@ class _SwitchTile extends StatelessWidget {
         subtitle: Text(subtitle,
             style: TextStyle(
                 color: AppColors.textSecondary(dark), fontSize: 12)),
-        trailing: Switch(
+        trailing: LinkUpToggle(
           value: value,
           onChanged: onChanged,
-          activeColor: AppColors.primary,
         ),
       ),
     );

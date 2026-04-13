@@ -11,6 +11,8 @@ import 'chat_screen.dart';
 import 'search_screen.dart';
 import 'profile_screen.dart';
 import 'new_chat_screen.dart';
+// ignore: unused_import
+import 'dart:async';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,12 +26,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _currentUser = FirebaseAuth.instance.currentUser!;
   final _userService = UserService();
   final _authService = AuthService();
+  final _chatService = ChatService();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _authService.setOnline(_currentUser.uid);
+    // Mark all pending 'sent' messages as 'delivered' when app opens
+    _chatService.markAllChatsDelivered(receiverUid: _currentUser.uid);
   }
 
   @override
@@ -43,6 +48,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _authService.setOnline(_currentUser.uid);
+      // Re-mark delivered every time app comes to foreground
+      _chatService.markAllChatsDelivered(receiverUid: _currentUser.uid);
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached ||
         state == AppLifecycleState.inactive) {
@@ -93,29 +100,63 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 }
 
-class _ChatsTab extends StatelessWidget {
+class _ChatsTab extends StatefulWidget {
   final UserModel? me;
   const _ChatsTab({this.me});
 
   @override
+  State<_ChatsTab> createState() => _ChatsTabState();
+}
+
+class _ChatsTabState extends State<_ChatsTab> {
+  final _currentUser = FirebaseAuth.instance.currentUser!;
+  final _chatService = ChatService();
+  final _userService = UserService();
+
+  // Track which chatIds we've already triggered markDelivered for in this session
+  final Set<String> _deliveredChatIds = {};
+
+  /// Called every time the chat list stream emits new data.
+  /// For each chat that has unread messages (sent to me), mark them delivered.
+  void _markChatsDelivered(List<ChatModel> chats) {
+    for (final chat in chats) {
+      // Only process chats where the OTHER person sent the last message
+      // and there are unread messages for me — skip already processed ones
+      final myUnread = chat.unreadCount[_currentUser.uid] ?? 0;
+      final lastSenderIsOther =
+          chat.lastMessageSenderId != null &&
+          chat.lastMessageSenderId != _currentUser.uid;
+
+      if (myUnread > 0 && lastSenderIsOther) {
+        // Use chatId + lastMessageTime as key to avoid repeat calls
+        final key = '${chat.id}_${chat.lastMessageTime?.millisecondsSinceEpoch}';
+        if (!_deliveredChatIds.contains(key)) {
+          _deliveredChatIds.add(key);
+          _chatService.markDelivered(
+            chatId: chat.id,
+            receiverUid: _currentUser.uid,
+          );
+        }
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final currentUser = FirebaseAuth.instance.currentUser!;
-    final chatService = ChatService();
-    final userService = UserService();
 
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 20,
         title: Row(children: [
           Text(
-            me?.username ?? 'LinkUp',
+            widget.me?.username ?? 'LinkUp',
             style: TextStyle(
                 color: AppColors.textPrimary(dark),
                 fontWeight: FontWeight.bold,
                 fontSize: 20),
           ),
-          if (me?.isVerified == true) ...[
+          if (widget.me?.isVerified == true) ...[
             const SizedBox(width: 4),
             const Icon(Icons.verified, color: AppColors.verified, size: 18),
           ],
@@ -130,13 +171,21 @@ class _ChatsTab extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<List<ChatModel>>(
-        stream: chatService.getUserChats(currentUser.uid),
+        stream: _chatService.getUserChats(_currentUser.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
                 child: CircularProgressIndicator(color: AppColors.primary));
           }
           final chats = snapshot.data ?? [];
+
+          // ── Auto-mark delivered for all chats with new messages ──
+          if (chats.isNotEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _markChatsDelivered(chats);
+            });
+          }
+
           if (chats.isEmpty) {
             return Center(
               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -159,17 +208,17 @@ class _ChatsTab extends StatelessWidget {
             itemBuilder: (context, index) {
               final chat = chats[index];
               final otherUid = chat.participants.firstWhere(
-                  (id) => id != currentUser.uid,
+                  (id) => id != _currentUser.uid,
                   orElse: () => '');
               return FutureBuilder<UserModel?>(
-                future: userService.getUser(otherUid),
+                future: _userService.getUser(otherUid),
                 builder: (context, userSnap) {
                   final other = userSnap.data;
-                  final unread = chat.unreadCount[currentUser.uid] ?? 0;
+                  final unread = chat.unreadCount[_currentUser.uid] ?? 0;
                   return _ChatTile(
                     chat: chat,
                     other: other,
-                    currentUid: currentUser.uid,
+                    currentUid: _currentUser.uid,
                     unreadCount: unread,
                     dark: dark,
                     onTap: () => Navigator.push(
@@ -178,7 +227,7 @@ class _ChatsTab extends StatelessWidget {
                         builder: (_) => ChatScreen(
                           chatId: chat.id,
                           otherUser: other,
-                          currentUid: currentUser.uid,
+                          currentUid: _currentUser.uid,
                         ),
                       ),
                     ),
