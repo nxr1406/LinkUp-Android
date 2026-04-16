@@ -17,8 +17,11 @@ class ChatService {
         .where('participants', arrayContains: uid)
         .orderBy('lastMessageTime', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((d) => ChatModel.fromMap(d.data(), d.id)).toList());
+        .map((snap) => snap.docs
+            .map((d) => ChatModel.fromMap(d.data(), d.id))
+            // Hide chats deleted by this user
+            .where((c) => c.deletedFor[uid] == null)
+            .toList());
   }
 
   Stream<List<MessageModel>> getMessages(String chatId) {
@@ -76,6 +79,7 @@ class ChatService {
         'participants': [senderId, receiverId],
         'lastMessage': forwardedFrom != null ? '📨 Forwarded' : text.trim(),
         'lastMessageSenderId': senderId,
+        'lastMessageStatus': 'sent',
         'lastMessageTime': FieldValue.serverTimestamp(),
         'unreadCount': {receiverId: FieldValue.increment(1)},
       },
@@ -144,6 +148,11 @@ class ChatService {
     for (final doc in toUpdate) {
       batch.update(doc.reference, {'status': 'delivered'});
     }
+    // Update lastMessageStatus on chat doc so home screen tick updates
+    batch.update(
+      _firestore.collection('chats').doc(chatId),
+      {'lastMessageStatus': 'delivered'},
+    );
     await batch.commit();
   }
 
@@ -185,6 +194,11 @@ class ChatService {
     for (final doc in toUpdate) {
       batch.update(doc.reference, {'status': 'seen'});
     }
+    // Update lastMessageStatus on chat doc so home screen cyan tick shows
+    batch.update(
+      chatRef,
+      {'lastMessageStatus': 'seen'},
+    );
     await batch.commit();
   }
 
@@ -323,4 +337,16 @@ class ChatService {
   }
 
   String getChatId(String uid1, String uid2) => _chatId(uid1, uid2);
+
+  /// Delete a chat for a specific user (soft delete — hides from their list)
+  /// We update the chat doc with a deletedFor map so the other user still sees it.
+  Future<void> deleteChat({
+    required String chatId,
+    required String userId,
+  }) async {
+    final chatRef = _firestore.collection('chats').doc(chatId);
+    await chatRef.update({
+      'deletedFor.$userId': FieldValue.serverTimestamp(),
+    });
+  }
 }

@@ -3,28 +3,28 @@ class ChatModel {
   final List<String> participants;
   final String? lastMessage;
   final String? lastMessageSenderId;
+  final String? lastMessageStatus; // sent / delivered / seen
   final DateTime? lastMessageTime;
   final Map<String, int> unreadCount;
-  // nicknames: { uid: nickname }
   final Map<String, String> nicknames;
-  // seenBy: { uid: DateTime } — last time each participant read
   final Map<String, DateTime?> seenBy;
-  // typing: { uid: bool }
   final Map<String, bool> typing;
-  // settings: { uid: { 'readReceipts': bool, 'typingIndicator': bool } }
   final Map<String, Map<String, bool>> settings;
+  final Map<String, DateTime?> deletedFor; // uid → timestamp when deleted
 
   ChatModel({
     required this.id,
     required this.participants,
     this.lastMessage,
     this.lastMessageSenderId,
+    this.lastMessageStatus,
     this.lastMessageTime,
     this.unreadCount = const {},
     this.nicknames = const {},
     this.seenBy = const {},
     this.typing = const {},
     this.settings = const {},
+    this.deletedFor = const {},
   });
 
   factory ChatModel.fromMap(Map<String, dynamic> map, String id) {
@@ -61,6 +61,7 @@ class ChatModel {
       participants: List<String>.from(map['participants'] ?? []),
       lastMessage: map['lastMessage'],
       lastMessageSenderId: map['lastMessageSenderId'],
+      lastMessageStatus: map['lastMessageStatus'],
       lastMessageTime: map['lastMessageTime'] != null
           ? (map['lastMessageTime'] as dynamic).toDate()
           : null,
@@ -69,6 +70,15 @@ class ChatModel {
       seenBy: seenByParsed,
       typing: typingParsed,
       settings: settingsParsed,
+      deletedFor: () {
+        final raw = map['deletedFor'];
+        if (raw is! Map) return {};
+        final result = <String, DateTime?>{};
+        raw.forEach((k, v) {
+          result[k.toString()] = v != null ? (v as dynamic).toDate() : null;
+        });
+        return result;
+      }(),
     );
   }
 
