@@ -72,10 +72,10 @@ class ChatModel {
       settings: settingsParsed,
       deletedFor: () {
         final raw = map['deletedFor'];
-        if (raw is! Map) return {};
+        if (raw is! Map) return <String, DateTime?>{};
         final result = <String, DateTime?>{};
-        raw.forEach((k, v) {
-          result[k.toString()] = v != null ? (v as dynamic).toDate() : null;
+        (raw as Map<dynamic, dynamic>).forEach((k, v) {
+          result[k.toString()] = v != null ? (v as dynamic).toDate() as DateTime : null;
         });
         return result;
       }(),
