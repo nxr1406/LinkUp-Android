@@ -33,7 +33,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _authService.setOnline(_currentUser.uid);
-    // Mark all pending 'sent' messages as 'delivered' when app opens
     _chatService.markAllChatsDelivered(receiverUid: _currentUser.uid);
   }
 
@@ -48,7 +47,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _authService.setOnline(_currentUser.uid);
-      // Re-mark delivered every time app comes to foreground
       _chatService.markAllChatsDelivered(receiverUid: _currentUser.uid);
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached ||
@@ -100,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 }
 
-
+// ── Chats Tab ─────────────────────────────────────────────────────────────────
 class _ChatsTab extends StatefulWidget {
   final UserModel? me;
   const _ChatsTab({this.me});
@@ -175,15 +173,22 @@ class _ChatsTabState extends State<_ChatsTab> {
         return true;
       },
       child: Scaffold(
+        backgroundColor: AppColors.scaffoldBg(dark),
         appBar: _isSelecting
             ? AppBar(
                 backgroundColor: AppColors.appBarBg(dark),
+                elevation: 0,
                 leading: IconButton(
                   icon: Icon(Icons.close, color: AppColors.textPrimary(dark)),
                   onPressed: _clearSelection,
                 ),
-                title: Text('${_selectedIds.length} selected',
-                    style: TextStyle(color: AppColors.textPrimary(dark), fontWeight: FontWeight.bold)),
+                title: Text(
+                  '${_selectedIds.length} selected',
+                  style: TextStyle(
+                    color: AppColors.textPrimary(dark),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
@@ -192,91 +197,224 @@ class _ChatsTabState extends State<_ChatsTab> {
                 ],
               )
             : AppBar(
-                titleSpacing: 20,
                 backgroundColor: AppColors.appBarBg(dark),
+                elevation: 0,
+                titleSpacing: 16,
                 title: Row(children: [
-                  Text(widget.me?.username ?? 'LinkUp',
-                      style: TextStyle(color: AppColors.textPrimary(dark),
-                          fontWeight: FontWeight.bold, fontSize: 20)),
+                  Text(
+                    widget.me?.username ?? 'LinkUp',
+                    style: TextStyle(
+                      color: AppColors.textPrimary(dark),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
                   if (widget.me?.isVerified == true) ...[
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 5),
                     const Icon(Icons.verified, color: AppColors.verified, size: 18),
                   ],
                 ]),
                 actions: [
+                  // Camera icon (WhatsApp-style)
                   IconButton(
-                    icon: Icon(Icons.edit_square, color: AppColors.textPrimary(dark), size: 24),
-                    onPressed: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const NewChatScreen())),
+                    icon: Icon(
+                      Icons.camera_alt_outlined,
+                      color: AppColors.textPrimary(dark),
+                      size: 24,
+                    ),
+                    onPressed: () {},
+                  ),
+                  // Three-dot menu
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, color: AppColors.textPrimary(dark), size: 24),
+                    color: dark ? const Color(0xFF1E1E1E) : Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    onSelected: (value) {
+                      if (value == 'new_chat') {
+                        Navigator.push(context,
+                            MaterialPageRoute(builder: (_) => const NewChatScreen()));
+                      }
+                    },
+                    itemBuilder: (ctx) => [
+                      PopupMenuItem(
+                        value: 'new_chat',
+                        child: Row(children: [
+                          Icon(Icons.chat_bubble_outline,
+                              size: 18, color: AppColors.textPrimary(dark)),
+                          const SizedBox(width: 12),
+                          Text('New chat',
+                              style: TextStyle(color: AppColors.textPrimary(dark))),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'new_group',
+                        child: Row(children: [
+                          Icon(Icons.group_add_outlined,
+                              size: 18, color: AppColors.textPrimary(dark)),
+                          const SizedBox(width: 12),
+                          Text('New group',
+                              style: TextStyle(color: AppColors.textPrimary(dark))),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'settings',
+                        child: Row(children: [
+                          Icon(Icons.settings_outlined,
+                              size: 18, color: AppColors.textPrimary(dark)),
+                          const SizedBox(width: 12),
+                          Text('Settings',
+                              style: TextStyle(color: AppColors.textPrimary(dark))),
+                        ]),
+                      ),
+                    ],
                   ),
                 ],
               ),
-        body: StreamBuilder<List<ChatModel>>(
-          stream: _chatService.getUserChats(_currentUser.uid),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-            }
-            final chats = snapshot.data ?? [];
-            if (chats.isNotEmpty) {
-              WidgetsBinding.instance.addPostFrameCallback((_) => _markChatsDelivered(chats));
-            }
-            if (chats.isEmpty) {
-              return Center(
-                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(Icons.chat_bubble_outline, size: 64,
-                      color: AppColors.textSecondary(dark).withOpacity(0.4)),
-                  const SizedBox(height: 16),
-                  Text('No chats yet', style: TextStyle(color: AppColors.textSecondary(dark), fontSize: 16)),
-                  const SizedBox(height: 8),
-                  Text('Tap the edit icon to start chatting',
-                      style: TextStyle(color: AppColors.textSecondary(dark), fontSize: 13)),
-                ]),
-              );
-            }
-            return ListView.builder(
-              itemCount: chats.length,
-              itemBuilder: (context, index) {
-                final chat    = chats[index];
-                final otherUid = chat.participants.firstWhere(
-                    (id) => id != _currentUser.uid, orElse: () => '');
-                final isSelected = _selectedIds.contains(chat.id);
-                return FutureBuilder<UserModel?>(
-                  future: _getCachedUser(otherUid),
-                  builder: (context, userSnap) {
-                    final other  = userSnap.data;
-                    final unread = chat.unreadCount[_currentUser.uid] ?? 0;
-                    return _ChatTile(
-                      chat: chat, other: other,
-                      currentUid: _currentUser.uid,
-                      unreadCount: unread, dark: dark,
-                      isSelected: isSelected,
-                      isSelecting: _isSelecting,
-                      onTap: () {
-                        if (_isSelecting) {
-                          _toggleSelect(chat.id);
-                        } else {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => ChatScreen(
-                              chatId: chat.id, otherUser: other,
-                              currentUid: _currentUser.uid),
-                          ));
-                        }
-                      },
-                      onLongPress: () => _toggleSelect(chat.id),
+        body: Column(
+          children: [
+            // ── WhatsApp-style Search Bar ──────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                    context, MaterialPageRoute(builder: (_) => const SearchScreen())),
+                child: AbsorbPointer(
+                  child: TextField(
+                    enabled: false,
+                    decoration: InputDecoration(
+                      hintText: 'Search...',
+                      hintStyle: TextStyle(
+                        color: AppColors.textSecondary(dark),
+                        fontSize: 15,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: AppColors.textSecondary(dark),
+                        size: 22,
+                      ),
+                      filled: true,
+                      fillColor: dark
+                          ? const Color(0xFF1A1A1A)
+                          : const Color(0xFFF0F0F0),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
+                      disabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Chat List ─────────────────────────────────────────────
+            Expanded(
+              child: StreamBuilder<List<ChatModel>>(
+                stream: _chatService.getUserChats(_currentUser.uid),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator(color: AppColors.primary));
+                  }
+                  final chats = snapshot.data ?? [];
+                  if (chats.isNotEmpty) {
+                    WidgetsBinding.instance
+                        .addPostFrameCallback((_) => _markChatsDelivered(chats));
+                  }
+                  if (chats.isEmpty) {
+                    return Center(
+                      child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.chat_bubble_outline,
+                                size: 64,
+                                color: AppColors.textSecondary(dark).withOpacity(0.4)),
+                            const SizedBox(height: 16),
+                            Text('No chats yet',
+                                style: TextStyle(
+                                    color: AppColors.textSecondary(dark), fontSize: 16)),
+                            const SizedBox(height: 8),
+                            Text('Tap + to start chatting',
+                                style: TextStyle(
+                                    color: AppColors.textSecondary(dark), fontSize: 13)),
+                          ]),
                     );
-                  },
-                );
-              },
-            );
-          },
+                  }
+                  return ListView.builder(
+                    itemCount: chats.length,
+                    itemBuilder: (context, index) {
+                      final chat = chats[index];
+                      final otherUid = chat.participants.firstWhere(
+                          (id) => id != _currentUser.uid,
+                          orElse: () => '');
+                      final isSelected = _selectedIds.contains(chat.id);
+                      return FutureBuilder<UserModel?>(
+                        future: _getCachedUser(otherUid),
+                        builder: (context, userSnap) {
+                          final other = userSnap.data;
+                          final unread = chat.unreadCount[_currentUser.uid] ?? 0;
+                          return _ChatTile(
+                            chat: chat,
+                            other: other,
+                            currentUid: _currentUser.uid,
+                            unreadCount: unread,
+                            dark: dark,
+                            isSelected: isSelected,
+                            isSelecting: _isSelecting,
+                            onTap: () {
+                              if (_isSelecting) {
+                                _toggleSelect(chat.id);
+                              } else {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ChatScreen(
+                                          chatId: chat.id,
+                                          otherUser: other,
+                                          currentUid: _currentUser.uid),
+                                    ));
+                              }
+                            },
+                            onLongPress: () => _toggleSelect(chat.id),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
+
+        // ── WhatsApp-style FAB ────────────────────────────────────────
+        floatingActionButton: _isSelecting
+            ? null
+            : FloatingActionButton(
+                onPressed: () => Navigator.push(
+                    context, MaterialPageRoute(builder: (_) => const NewChatScreen())),
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 4,
+                child: const Icon(Icons.add_comment_outlined, color: Colors.white, size: 26),
+              ),
       ),
     );
   }
 }
 
-// ── WhatsApp-style chat tile ───────────────────────────────────────────────────
+// ── WhatsApp-style Chat Tile ──────────────────────────────────────────────────
 class _ChatTile extends StatelessWidget {
   final ChatModel chat;
   final UserModel? other;
@@ -286,33 +424,33 @@ class _ChatTile extends StatelessWidget {
   final VoidCallback onTap, onLongPress;
 
   const _ChatTile({
-    required this.chat, required this.other, required this.currentUid,
-    required this.unreadCount, required this.dark,
-    required this.isSelected, required this.isSelecting,
-    required this.onTap, required this.onLongPress,
+    required this.chat,
+    required this.other,
+    required this.currentUid,
+    required this.unreadCount,
+    required this.dark,
+    required this.isSelected,
+    required this.isSelecting,
+    required this.onTap,
+    required this.onLongPress,
   });
 
   String _formatTime(DateTime? t) {
     if (t == null) return '';
-    final now  = DateTime.now();
+    final now = DateTime.now();
     final diff = now.difference(t);
     if (diff.inMinutes < 1) return 'now';
-    if (diff.inMinutes < 60) {
-      final h = t.hour, m = t.minute;
-      final hh = h % 12 == 0 ? 12 : h % 12;
-      return '$hh:${m.toString().padLeft(2,'0')} ${h < 12 ? 'AM' : 'PM'}';
-    }
     if (diff.inHours < 24) {
       final h = t.hour, m = t.minute;
       final hh = h % 12 == 0 ? 12 : h % 12;
-      return '$hh:${m.toString().padLeft(2,'0')} ${h < 12 ? 'AM' : 'PM'}';
+      return '$hh:${m.toString().padLeft(2, '0')} ${h < 12 ? 'AM' : 'PM'}';
     }
     if (diff.inDays == 1) return 'Yesterday';
     if (diff.inDays < 7) {
-      const d = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      const d = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       return d[t.weekday - 1];
     }
-    return '${t.day}/${t.month}/${t.year % 100}';
+    return '${t.month}/${t.day}/${t.year % 100}';
   }
 
   Widget _tick(String? status) {
@@ -321,20 +459,26 @@ class _ChatTile extends StatelessWidget {
     const cyan = Color(0xFF00BCD4);
     switch (status) {
       case 'sending':
-        return SizedBox(width: 14, height: 14,
+        return SizedBox(
+            width: 14,
+            height: 14,
             child: CircularProgressIndicator(strokeWidth: 1.5, color: grey));
       case 'sent':
         return Icon(Icons.check, size: 16, color: grey);
       case 'delivered':
-        return SizedBox(width: 22, child: Stack(children: [
-          Icon(Icons.check, size: 16, color: grey),
-          Positioned(left: 6, child: Icon(Icons.check, size: 16, color: grey)),
-        ]));
+        return SizedBox(
+            width: 22,
+            child: Stack(children: [
+              Icon(Icons.check, size: 16, color: grey),
+              Positioned(left: 6, child: Icon(Icons.check, size: 16, color: grey)),
+            ]));
       case 'seen':
-        return SizedBox(width: 22, child: Stack(children: [
-          const Icon(Icons.check, size: 16, color: cyan),
-          Positioned(left: 6, child: const Icon(Icons.check, size: 16, color: cyan)),
-        ]));
+        return SizedBox(
+            width: 22,
+            child: Stack(children: [
+              const Icon(Icons.check, size: 16, color: cyan),
+              Positioned(left: 6, child: const Icon(Icons.check, size: 16, color: cyan)),
+            ]));
       default:
         return const SizedBox.shrink();
     }
@@ -342,9 +486,9 @@ class _ChatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMe   = chat.lastMessageSenderId == currentUid;
+    final isMe = chat.lastMessageSenderId == currentUid;
     final status = isMe ? chat.lastMessageStatus : null;
-    final selBg  = dark
+    final selBg = dark
         ? Colors.white.withOpacity(0.08)
         : AppColors.primary.withOpacity(0.08);
 
@@ -354,79 +498,121 @@ class _ChatTile extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         color: isSelected ? selBg : Colors.transparent,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(children: [
-          // Avatar with selection overlay
-          Stack(clipBehavior: Clip.none, children: [
-            AvatarWidget(user: other, radius: 26),
-            if (isSelected)
-              Positioned.fill(child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(0.88)),
-                child: const Icon(Icons.check, color: Colors.white, size: 22),
-              )),
-          ]),
-          const SizedBox(width: 12),
-
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Row 1: name + time
-            Row(children: [
-              Expanded(child: Row(children: [
-                Flexible(child: Text(
-                  other?.username ?? '...',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15.5,
-                      color: AppColors.textPrimary(dark)),
-                  overflow: TextOverflow.ellipsis,
-                )),
-                if (other?.isVerified == true) ...[
-                  const SizedBox(width: 3),
-                  const Icon(Icons.verified, color: AppColors.verified, size: 14),
-                ],
-              ])),
-              Text(_formatTime(chat.lastMessageTime),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: unreadCount > 0 ? AppColors.primary : AppColors.textSecondary(dark),
-                    fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
-                  )),
-            ]),
-            const SizedBox(height: 3),
-
-            // Row 2: tick + preview + badge
-            Row(children: [
-              if (isMe && status != null) ...[
-                _tick(status),
-                const SizedBox(width: 4),
-              ],
-              Expanded(child: Text(
-                chat.lastMessage ?? '',
-                style: TextStyle(
-                  fontSize: 13.5,
-                  color: unreadCount > 0
-                      ? AppColors.textPrimary(dark)
-                      : AppColors.textSecondary(dark),
-                  fontWeight: unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              )),
-              if (unreadCount > 0)
-                Container(
-                  margin: const EdgeInsets.only(left: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(10)),
-                  child: Text(
-                    unreadCount > 99 ? '99+' : '$unreadCount',
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+        // WhatsApp-style padding: more vertical breathing room
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // ── Avatar with selection overlay ─────────────────────────
+            Stack(clipBehavior: Clip.none, children: [
+              AvatarWidget(user: other, radius: 28), // slightly larger
+              if (isSelected)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary.withOpacity(0.88),
+                    ),
+                    child: const Icon(Icons.check, color: Colors.white, size: 22),
                   ),
                 ),
             ]),
-          ])),
-        ]),
+            const SizedBox(width: 14),
+
+            // ── Text content ──────────────────────────────────────────
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Row 1: Name + Time
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Row(children: [
+                          Flexible(
+                            child: Text(
+                              other?.username ?? '...',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: AppColors.textPrimary(dark),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (other?.isVerified == true) ...[
+                            const SizedBox(width: 3),
+                            const Icon(Icons.verified,
+                                color: AppColors.verified, size: 14),
+                          ],
+                        ]),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _formatTime(chat.lastMessageTime),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: unreadCount > 0
+                              ? AppColors.primary
+                              : AppColors.textSecondary(dark),
+                          fontWeight: unreadCount > 0
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  // Row 2: tick + preview + unread badge
+                  Row(
+                    children: [
+                      if (isMe && status != null) ...[
+                        _tick(status),
+                        const SizedBox(width: 4),
+                      ],
+                      Expanded(
+                        child: Text(
+                          chat.lastMessage ?? '',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: unreadCount > 0
+                                ? AppColors.textPrimary(dark)
+                                : AppColors.textSecondary(dark),
+                            fontWeight: unreadCount > 0
+                                ? FontWeight.w500
+                                : FontWeight.normal,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      if (unreadCount > 0)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            unreadCount > 99 ? '99+' : '$unreadCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
