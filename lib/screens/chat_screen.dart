@@ -15,12 +15,16 @@ class ChatScreen extends StatefulWidget {
   final String chatId;
   final UserModel? otherUser;
   final String currentUid;
+  final String? groupName;
+  final List<UserModel>? groupParticipants;
 
   const ChatScreen({
     super.key,
     required this.chatId,
     required this.otherUser,
     required this.currentUid,
+    this.groupName,
+    this.groupParticipants,
   });
 
   @override
@@ -340,7 +344,7 @@ class _ChatScreenState extends State<ChatScreen> {
             titleSpacing: 0,
             title: GestureDetector(
               onTap: () {
-                if (widget.otherUser != null) {
+                if (widget.groupName == null && widget.otherUser != null) {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -349,36 +353,58 @@ class _ChatScreenState extends State<ChatScreen> {
                 }
               },
               child: Row(children: [
-                AvatarWidget(user: widget.otherUser, radius: 18),
+                // Group icon or user avatar
+                widget.groupName != null
+                    ? Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.group,
+                            color: AppColors.primary, size: 20),
+                      )
+                    : AvatarWidget(user: widget.otherUser, radius: 18),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(children: [
-                          Text(
-                            otherNick?.isNotEmpty == true
-                                ? otherNick!
-                                : (widget.otherUser?.displayName ?? '...'),
-                            style: TextStyle(
-                                color: AppColors.textPrimary(dark),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16),
+                          Flexible(
+                            child: Text(
+                              widget.groupName ??
+                                  (otherNick?.isNotEmpty == true
+                                      ? otherNick!
+                                      : (widget.otherUser?.displayName ?? '...')),
+                              style: TextStyle(
+                                  color: AppColors.textPrimary(dark),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          if (widget.otherUser?.isVerified == true) ...[
+                          if (widget.groupName == null && widget.otherUser?.isVerified == true) ...[
                             const SizedBox(width: 3),
                             const Icon(Icons.verified,
                                 color: AppColors.verified, size: 14),
                           ],
                         ]),
-                        isOtherTyping
-                            ? Text('typing...',
+                        widget.groupName != null
+                            ? Text(
+                                '${(widget.groupParticipants?.length ?? 0) + 1} participants',
                                 style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontSize: 11,
-                                    fontStyle: FontStyle.italic))
-                            : _LastSeenText(
-                                user: widget.otherUser, dark: dark),
+                                    color: AppColors.textSecondary(dark),
+                                    fontSize: 11),
+                              )
+                            : (isOtherTyping
+                                ? Text('typing...',
+                                    style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontSize: 11,
+                                        fontStyle: FontStyle.italic))
+                                : _LastSeenText(
+                                    user: widget.otherUser, dark: dark)),
                       ]),
                 ),
               ]),

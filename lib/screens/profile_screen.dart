@@ -281,8 +281,6 @@ class _SettingsSheet extends StatefulWidget {
 }
 
 class _SettingsSheetState extends State<_SettingsSheet> {
-  bool _darkMode = false;
-
   @override
   Widget build(BuildContext context) {
     const dark = false;
@@ -331,19 +329,6 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           // App Lock
           AppLockSettingsTile(dark: dark),
 
-          // Dark mode toggle
-          ListTile(
-            leading: Icon(Icons.dark_mode_outlined, color: tc, size: 22),
-            title: Text('Dark Mode',
-                style: TextStyle(color: tc, fontSize: 15)),
-            trailing: LinkUpToggle(
-              value: _darkMode,
-              onChanged: (v) {
-                setState(() => _darkMode = v);
-                LinkUpApp.toggleTheme();
-              },
-            ),
-          ),
 
           _T(icon: Icons.key_outlined, label: 'Change Password',
               dark: dark, onTap: () => _changePassword(context, dark)),
@@ -419,28 +404,29 @@ class _SettingsSheetState extends State<_SettingsSheet> {
     final ctrl = TextEditingController();
     showDialog(
       context: ctx,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.cardBg(dark),
-        title: Text('Change Password',
-            style: TextStyle(color: AppColors.textPrimary(dark))),
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Change Password',
+            style: TextStyle(color: Color(0xFF111111))),
         content: TextField(
           controller: ctrl,
           obscureText: true,
-          style: TextStyle(color: AppColors.textPrimary(dark)),
+          style: const TextStyle(color: Color(0xFF111111)),
           decoration: InputDecoration(
             hintText: 'New password (min 6 chars)',
-            hintStyle:
-                TextStyle(color: AppColors.textSecondary(dark)),
+            hintStyle: const TextStyle(color: Color(0xFF888888)),
             filled: true,
-            fillColor: AppColors.inputFill(dark),
+            fillColor: const Color(0xFFF0F2F5),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10)),
           ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(_),
-              child: const Text('Cancel')),
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Color(0xFF666666)))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary),
@@ -449,7 +435,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
               try {
                 await FirebaseAuth.instance.currentUser!
                     .updatePassword(ctrl.text);
-                Navigator.pop(_);
+                Navigator.pop(dialogCtx);
                 ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
                     content: Text('Password updated!'),
                     backgroundColor: Colors.green));
@@ -471,22 +457,23 @@ class _SettingsSheetState extends State<_SettingsSheet> {
     Navigator.pop(ctx);
     showDialog(
       context: ctx,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.cardBg(dark),
-        title: Text('Delete Account',
-            style: TextStyle(color: AppColors.textPrimary(dark))),
-        content: Text('Permanently deletes your account & all data.',
-            style:
-                TextStyle(color: AppColors.textSecondary(dark))),
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Account',
+            style: TextStyle(color: Color(0xFF111111))),
+        content: const Text('Permanently deletes your account & all data.',
+            style: TextStyle(color: Color(0xFF666666))),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(_),
-              child: const Text('Cancel')),
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Color(0xFF666666)))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red),
             onPressed: () async {
-              Navigator.pop(_);
+              Navigator.pop(dialogCtx);
               try {
                 final uid =
                     FirebaseAuth.instance.currentUser!.uid;

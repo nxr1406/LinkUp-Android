@@ -40,18 +40,22 @@ class UserProfileViewScreen extends StatelessWidget {
                   if (val == 'block') {
                     final confirm = await showDialog<bool>(
                       context: context,
-                      builder: (_) => AlertDialog(
+                      builder: (dialogCtx) => AlertDialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         title: const Text('Block user?'),
                         content: Text(
                             "Block @${user.username}? They won't be able to message you."),
                         actions: [
                           TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancel')),
+                              onPressed: () => Navigator.pop(dialogCtx, false),
+                              child: const Text('Cancel',
+                                  style: TextStyle(color: Color(0xFF666666)))),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red),
-                            onPressed: () => Navigator.pop(context, true),
+                                backgroundColor: Colors.red,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8))),
+                            onPressed: () => Navigator.pop(dialogCtx, true),
                             child: const Text('Block',
                                 style: TextStyle(color: Colors.white)),
                           ),
