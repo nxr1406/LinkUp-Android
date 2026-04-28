@@ -51,7 +51,7 @@ class _NewChatScreenState extends State<NewChatScreen> {
         backgroundColor: AppColors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios,
+          icon: const Icon(Icons.arrow_back_rounded_ios_new_rounded,
               color: AppColors.black, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
@@ -77,7 +77,7 @@ class _NewChatScreenState extends State<NewChatScreen> {
                 decoration: const InputDecoration(
                   hintText: 'Search users...',
                   hintStyle: TextStyle(color: AppColors.grey),
-                  prefixIcon: Icon(Icons.search, color: AppColors.grey),
+                  prefixIcon: Icon(Icons.search_rounded, color: AppColors.grey),
                   border: InputBorder.none,
                   contentPadding:
                       EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -108,7 +108,7 @@ class _NewChatScreenState extends State<NewChatScreen> {
                                         fontWeight: FontWeight.w600)),
                                 if (user.isVerified) ...[
                                   const SizedBox(width: 3),
-                                  const Icon(Icons.verified,
+                                  const Icon(Icons.verified_rounded,
                                       color: AppColors.verified, size: 14),
                                 ],
                               ],

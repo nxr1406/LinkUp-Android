@@ -59,7 +59,7 @@ class _SuspensionAppealScreenState extends State<SuspensionAppealScreen> {
         backgroundColor: AppColors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios,
+          icon: const Icon(Icons.arrow_back_rounded_ios_new_rounded,
               color: AppColors.black, size: 20),
           onPressed: () => Navigator.pop(context),
         ),

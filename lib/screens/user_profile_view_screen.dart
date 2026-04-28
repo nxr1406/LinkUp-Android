@@ -29,13 +29,13 @@ class UserProfileViewScreen extends StatelessWidget {
             pinned: true,
             backgroundColor: AppColors.appBarBg(dark),
             leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios,
+              icon: Icon(Icons.arrow_back_rounded_ios_new_rounded,
                   color: AppColors.textPrimary(dark), size: 20),
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
               PopupMenuButton<String>(
-                icon: Icon(Icons.more_horiz, color: AppColors.textPrimary(dark)),
+                icon: Icon(Icons.more_horiz_rounded, color: AppColors.textPrimary(dark)),
                 onSelected: (val) async {
                   if (val == 'block') {
                     final confirm = await showDialog<bool>(
@@ -84,7 +84,7 @@ class UserProfileViewScreen extends StatelessWidget {
                   PopupMenuItem(
                     value: 'block',
                     child: Row(children: const [
-                      Icon(Icons.block, color: Colors.red, size: 18),
+                      Icon(Icons.block_rounded, color: Colors.red, size: 18),
                       SizedBox(width: 8),
                       Text('Block', style: TextStyle(color: Colors.red)),
                     ]),
@@ -150,7 +150,7 @@ class UserProfileViewScreen extends StatelessWidget {
                           color: AppColors.textPrimary(dark))),
                   if (user.isVerified) ...[
                     const SizedBox(width: 6),
-                    const Icon(Icons.verified,
+                    const Icon(Icons.verified_rounded,
                         color: AppColors.verified, size: 20),
                   ],
                 ]),
@@ -229,7 +229,7 @@ class UserProfileViewScreen extends StatelessWidget {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                        icon: const Icon(Icons.chat_bubble_rounded_outline_rounded, size: 18),
                         label: const Text('Message'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -262,7 +262,7 @@ class UserProfileViewScreen extends StatelessWidget {
                                       : () => userService.unfollowUser(
                                           followerId: me.uid,
                                           followingId: user.uid),
-                                  icon: Icon(Icons.person_remove_outlined,
+                                  icon: Icon(Icons.person_rounded_remove_outlined,
                                       size: 18,
                                       color: AppColors.textPrimary(dark)),
                                   label: Text('Following',
@@ -283,7 +283,7 @@ class UserProfileViewScreen extends StatelessWidget {
                                       : () => userService.followUser(
                                           followerId: me.uid,
                                           followingId: user.uid),
-                                  icon: const Icon(Icons.person_add_outlined,
+                                  icon: const Icon(Icons.person_rounded_add_outlined,
                                       size: 18),
                                   label: const Text('Follow',
                                       style: TextStyle(
@@ -313,7 +313,7 @@ class UserProfileViewScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Row(children: [
-                      Icon(Icons.block, color: Colors.red, size: 18),
+                      Icon(Icons.block_rounded, color: Colors.red, size: 18),
                       SizedBox(width: 8),
                       Text('This account is suspended',
                           style: TextStyle(color: Colors.red, fontSize: 13)),

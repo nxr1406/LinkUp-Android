@@ -39,7 +39,7 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
         titleSpacing: 16,
         title: Row(children: [
-          Icon(Icons.lock_outline,
+          Icon(Icons.lock_rounded_rounded,
               color: AppColors.textPrimary(dark), size: 18),
           const SizedBox(width: 6),
           Text(me!.username,
@@ -49,7 +49,7 @@ class ProfileScreen extends StatelessWidget {
                   fontSize: 18)),
           if (me!.isVerified) ...[
             const SizedBox(width: 4),
-            const Icon(Icons.verified, color: AppColors.verified, size: 18),
+            const Icon(Icons.verified_rounded, color: AppColors.verified, size: 18),
           ],
           if (me!.isAdmin) ...[
             const SizedBox(width: 4),
@@ -69,7 +69,7 @@ class ProfileScreen extends StatelessWidget {
         ]),
         actions: [
           IconButton(
-            icon: Icon(Icons.menu,
+            icon: Icon(Icons.more_horiz_rounded_rounded,
                 color: AppColors.textPrimary(dark), size: 26),
             onPressed: () => _showSettings(context, dark),
           ),
@@ -88,7 +88,7 @@ class ProfileScreen extends StatelessWidget {
                     color: AppColors.textPrimary(dark))),
             if (me!.isVerified) ...[
               const SizedBox(width: 4),
-              const Icon(Icons.verified, color: AppColors.verified, size: 20),
+              const Icon(Icons.verified_rounded, color: AppColors.verified, size: 20),
             ],
           ]),
           const SizedBox(height: 4),
@@ -240,7 +240,7 @@ class _AvatarEditorState extends State<_AvatarEditor> {
               color: AppColors.primary,
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2)),
-          child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+          child: const Icon(Icons.photo_camera_rounded, color: Colors.white, size: 14),
         ),
       ]),
     );
@@ -307,19 +307,19 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           ),
 
           // ── General ─────────────────────────────────────────
-          _T(icon: Icons.notifications_outlined, label: 'Notifications',
+          _T(icon: Icons.notifications_none_rounded, label: 'Notifications',
               dark: dark, onTap: () {
             Navigator.pop(context);
             Navigator.push(context, MaterialPageRoute(
                 builder: (_) => const NotificationSettingsScreen()));
           }),
-          _T(icon: Icons.security_outlined, label: 'Privacy & Terms',
+          _T(icon: Icons.security_rounded, label: 'Privacy & Terms',
               dark: dark, onTap: () {
             Navigator.pop(context);
             Navigator.push(context, MaterialPageRoute(
                 builder: (_) => const PrivacyScreen()));
           }),
-          _T(icon: Icons.block, label: 'Blocked Accounts', dark: dark,
+          _T(icon: Icons.block_rounded, label: 'Blocked Accounts', dark: dark,
               onTap: () {
             Navigator.pop(context);
             Navigator.push(context, MaterialPageRoute(
@@ -330,10 +330,10 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           AppLockSettingsTile(dark: dark),
 
 
-          _T(icon: Icons.key_outlined, label: 'Change Password',
+          _T(icon: Icons.key_rounded, label: 'Change Password',
               dark: dark, onTap: () => _changePassword(context, dark)),
 
-          _T(icon: Icons.verified_outlined, label: 'Request Verification',
+          _T(icon: Icons.verified_rounded_rounded, label: 'Request Verification',
               dark: dark, onTap: () {
             Navigator.pop(context);
             Navigator.push(context, MaterialPageRoute(
@@ -346,7 +346,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: Row(children: [
-                const Icon(Icons.admin_panel_settings,
+                const Icon(Icons.admin_panel_settings_rounded,
                     color: AppColors.verified, size: 16),
                 const SizedBox(width: 6),
                 Text('ADMIN PANEL',
@@ -357,7 +357,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
                         letterSpacing: 1.0)),
               ]),
             ),
-            _T(icon: Icons.shield_outlined,
+            _T(icon: Icons.shield_rounded,
                 label: 'Review Verifications',
                 color: AppColors.verified,
                 dark: dark, onTap: () {
@@ -365,7 +365,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
               Navigator.push(context, MaterialPageRoute(
                   builder: (_) => const AdminScreen(tab: 0)));
             }),
-            _T(icon: Icons.gavel_outlined,
+            _T(icon: Icons.gavel_rounded,
                 label: 'Suspension Appeals',
                 color: AppColors.verified,
                 dark: dark, onTap: () {
@@ -373,7 +373,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
               Navigator.push(context, MaterialPageRoute(
                   builder: (_) => const AdminScreen(tab: 1)));
             }),
-            _T(icon: Icons.manage_accounts_outlined,
+            _T(icon: Icons.manage_accounts_rounded,
                 label: 'Manage Users',
                 color: AppColors.verified,
                 dark: dark, onTap: () {
@@ -385,12 +385,12 @@ class _SettingsSheetState extends State<_SettingsSheet> {
 
           Divider(height: 1, color: AppColors.divider(dark)),
 
-          _T(icon: Icons.logout, label: 'Log out',
+          _T(icon: Icons.logout_rounded, label: 'Log out',
               color: Colors.red, dark: dark, onTap: () async {
             Navigator.pop(context);
             await AuthService().signOut();
           }),
-          _T(icon: Icons.delete_outline, label: 'Delete Account',
+          _T(icon: Icons.delete_outline_rounded, label: 'Delete Account',
               color: Colors.red, dark: dark,
               onTap: () => _deleteAccount(context, dark)),
           const SizedBox(height: 12),

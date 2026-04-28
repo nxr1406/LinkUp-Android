@@ -49,7 +49,7 @@ class _NotificationSettingsScreenState
         backgroundColor: AppColors.appBarBg(dark),
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios,
+          icon: Icon(Icons.arrow_back_rounded_ios_new_rounded,
               color: AppColors.textPrimary(dark), size: 20),
           onPressed: () => Navigator.pop(context),
         ),
@@ -63,7 +63,7 @@ class _NotificationSettingsScreenState
         children: [
           _SectionHeader(title: 'MESSAGE NOTIFICATIONS', dark: dark),
           _SwitchTile(
-            icon: Icons.chat_bubble_outline,
+            icon: Icons.chat_bubble_rounded_outline_rounded,
             title: 'Message Notifications',
             subtitle: 'Get notified when you receive a message',
             value: _messages,

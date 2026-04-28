@@ -138,7 +138,7 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF111111), size: 20),
+          icon: const Icon(Icons.arrow_back_rounded_ios_new_rounded, color: Color(0xFF111111), size: 20),
           onPressed: () {
             if (_namingStep) {
               setState(() => _namingStep = false);
@@ -214,7 +214,7 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
                             color: Color(0xFFEF4444),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.close, color: Colors.white, size: 10),
+                          child: const Icon(Icons.close_rounded, color: Colors.white, size: 10),
                         ),
                       ),
                     ]),
@@ -249,7 +249,7 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
             decoration: const InputDecoration(
               hintText: 'Search users...',
               hintStyle: TextStyle(color: Color(0xFF888888)),
-              prefixIcon: Icon(Icons.search, color: Color(0xFF888888), size: 20),
+              prefixIcon: Icon(Icons.search_rounded, color: Color(0xFF888888), size: 20),
               border: InputBorder.none,
               contentPadding:
                   EdgeInsets.symmetric(horizontal: 16, vertical: 11),
@@ -290,7 +290,7 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
                                   color: Color(0xFF111111))),
                           if (user.isVerified) ...[
                             const SizedBox(width: 3),
-                            const Icon(Icons.verified,
+                            const Icon(Icons.verified_rounded,
                                 color: AppColors.verified, size: 14),
                           ],
                         ]),
@@ -312,7 +312,7 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
                             ),
                           ),
                           child: sel
-                              ? const Icon(Icons.check,
+                              ? const Icon(Icons.check_rounded,
                                   color: Colors.white, size: 16)
                               : null,
                         ),
@@ -337,7 +337,7 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
               color: const Color(0xFFF0F2F5),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.group, color: Color(0xFF9E9E9E), size: 40),
+            child: const Icon(Icons.group_rounded, color: Color(0xFF9E9E9E), size: 40),
           ),
         ),
         const SizedBox(height: 28),

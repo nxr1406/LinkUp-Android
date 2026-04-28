@@ -19,7 +19,7 @@ class BlockedAccountsScreen extends StatelessWidget {
         backgroundColor: AppColors.appBarBg(dark),
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios,
+          icon: Icon(Icons.arrow_back_rounded_ios_new_rounded,
               color: AppColors.textPrimary(dark), size: 20),
           onPressed: () => Navigator.pop(context),
         ),
@@ -48,7 +48,7 @@ class BlockedAccountsScreen extends StatelessWidget {
               child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.block,
+                    Icon(Icons.block_rounded,
                         size: 64,
                         color: AppColors.textSecondary(dark)
                             .withOpacity(0.4)),

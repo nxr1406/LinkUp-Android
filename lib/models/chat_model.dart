@@ -11,6 +11,7 @@ class ChatModel {
   final Map<String, bool> typing;
   final Map<String, Map<String, bool>> settings;
   final Map<String, DateTime?> deletedFor; // uid → timestamp when deleted
+  final Map<String, DateTime?> pinnedBy;   // uid → timestamp when pinned
 
   ChatModel({
     required this.id,
@@ -25,6 +26,7 @@ class ChatModel {
     this.typing = const {},
     this.settings = const {},
     this.deletedFor = const {},
+    this.pinnedBy = const {},
   });
 
   factory ChatModel.fromMap(Map<String, dynamic> map, String id) {
@@ -72,6 +74,15 @@ class ChatModel {
       settings: settingsParsed,
       deletedFor: () {
         final raw = map['deletedFor'];
+        if (raw is! Map) return <String, DateTime?>{};
+        final result = <String, DateTime?>{};
+        (raw as Map<dynamic, dynamic>).forEach((k, v) {
+          result[k.toString()] = v != null ? (v as dynamic).toDate() as DateTime : null;
+        });
+        return result;
+      }(),
+      pinnedBy: () {
+        final raw = map['pinnedBy'];
         if (raw is! Map) return <String, DateTime?>{};
         final result = <String, DateTime?>{};
         (raw as Map<dynamic, dynamic>).forEach((k, v) {

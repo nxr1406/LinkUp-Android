@@ -337,7 +337,7 @@ class _ChatScreenState extends State<ChatScreen> {
         return Scaffold(
           appBar: AppBar(
             leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios,
+              icon: Icon(Icons.arrow_back_rounded_ios_new_rounded,
                   color: AppColors.textPrimary(dark), size: 20),
               onPressed: () => Navigator.pop(context),
             ),
@@ -361,7 +361,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           color: AppColors.primary.withOpacity(0.15),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.group,
+                        child: const Icon(Icons.group_rounded,
                             color: AppColors.primary, size: 20),
                       )
                     : AvatarWidget(user: widget.otherUser, radius: 18),
@@ -377,8 +377,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                   (otherNick?.isNotEmpty == true
                                       ? otherNick!
                                       : (widget.otherUser?.displayName ?? '...')),
-                              style: TextStyle(
-                                  color: AppColors.textPrimary(dark),
+                              style: const TextStyle(
+                                  color: Color(0xFF111111),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16),
                               overflow: TextOverflow.ellipsis,
@@ -386,32 +386,56 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                           if (widget.groupName == null && widget.otherUser?.isVerified == true) ...[
                             const SizedBox(width: 3),
-                            const Icon(Icons.verified,
+                            const Icon(Icons.verified_rounded_rounded,
                                 color: AppColors.verified, size: 14),
                           ],
                         ]),
-                        widget.groupName != null
-                            ? Text(
-                                '${(widget.groupParticipants?.length ?? 0) + 1} participants',
-                                style: TextStyle(
-                                    color: AppColors.textSecondary(dark),
-                                    fontSize: 11),
-                              )
-                            : (isOtherTyping
-                                ? Text('typing...',
-                                    style: TextStyle(
-                                        color: AppColors.primary,
-                                        fontSize: 11,
-                                        fontStyle: FontStyle.italic))
-                                : _LastSeenText(
-                                    user: widget.otherUser, dark: dark)),
+                        // Show original name as subtitle if nickname is active
+                        if (widget.groupName != null)
+                          Text(
+                            '${(widget.groupParticipants?.length ?? 0) + 1} participants',
+                            style: const TextStyle(
+                                color: Color(0xFF888888), fontSize: 11),
+                          )
+                        else if (otherNick?.isNotEmpty == true)
+                          Row(children: [
+                            Text(
+                              widget.otherUser?.displayName ?? '',
+                              style: const TextStyle(
+                                  color: Color(0xFF888888),
+                                  fontSize: 11),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text('nickname',
+                                  style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                          ])
+                        else if (isOtherTyping)
+                          Text('typing...',
+                              style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 11,
+                                  fontStyle: FontStyle.italic))
+                        else
+                          _LastSeenText(user: widget.otherUser, dark: dark),
                       ]),
                 ),
               ]),
             ),
             actions: [
               IconButton(
-                icon: Icon(Icons.info_outline,
+                icon: Icon(Icons.info_outline_rounded,
                     color: AppColors.textPrimary(dark)),
                 onPressed: () => _showChatInfoSheet(chat),
               ),
@@ -530,7 +554,7 @@ class _ChatScreenState extends State<ChatScreen> {
           decoration: const BoxDecoration(
               color: AppColors.primary, shape: BoxShape.circle),
           child:
-              const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+              const Icon(Icons.photo_camera_rounded, color: Colors.white, size: 18),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -564,7 +588,7 @@ class _ChatScreenState extends State<ChatScreen> {
             return GestureDetector(
               onTap: hasText ? _sendMessage : null,
               child: Icon(
-                hasText ? Icons.send : Icons.mic_none,
+                hasText ? Icons.send_rounded : Icons.mic_none,
                 color: hasText
                     ? AppColors.primary
                     : AppColors.textSecondary(dark),
@@ -674,7 +698,7 @@ class _ReplyBar extends StatelessWidget {
           ),
         ),
         IconButton(
-          icon: Icon(Icons.close, color: AppColors.textSecondary(dark)),
+          icon: Icon(Icons.close_rounded, color: AppColors.textSecondary(dark)),
           onPressed: onCancel,
         ),
       ]),
@@ -741,17 +765,17 @@ class _MessageOptionsSheet extends StatelessWidget {
         ),
         const Divider(),
         ListTile(
-          leading: const Icon(Icons.reply),
+          leading: const Icon(Icons.reply_rounded),
           title: const Text('Reply'),
           onTap: onReply,
         ),
         ListTile(
-          leading: const Icon(Icons.forward),
+          leading: const Icon(Icons.reply_rounded_rounded),
           title: const Text('Forward'),
           onTap: onForward,
         ),
         ListTile(
-          leading: const Icon(Icons.copy),
+          leading: const Icon(Icons.content_copy_rounded),
           title: const Text('Copy'),
           onTap: () {
             Clipboard.setData(ClipboardData(text: msg.text));
@@ -766,12 +790,12 @@ class _MessageOptionsSheet extends StatelessWidget {
         ),
         if (isMe && !msg.isUnsent) ...[
           ListTile(
-            leading: const Icon(Icons.edit_outlined),
+            leading: const Icon(Icons.edit_rounded),
             title: const Text('Edit'),
             onTap: onEdit,
           ),
           ListTile(
-            leading: const Icon(Icons.remove_circle_outline,
+            leading: const Icon(Icons.remove_circle_outline_rounded,
                 color: Colors.orange),
             title: const Text('Unsend',
                 style: TextStyle(color: Colors.orange)),
@@ -782,7 +806,7 @@ class _MessageOptionsSheet extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.delete_outline, color: Colors.red),
+            leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
             title:
                 const Text('Delete', style: TextStyle(color: Colors.red)),
             onTap: () {
@@ -1030,7 +1054,7 @@ class _MessageBubble extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.forward,
+                  Icon(Icons.reply_rounded_rounded,
                       size: 12, color: AppColors.textSecondary(dark)),
                   const SizedBox(width: 2),
                   Text('Forwarded',
@@ -1040,6 +1064,38 @@ class _MessageBubble extends StatelessWidget {
                           fontStyle: FontStyle.italic)),
                 ],
               ),
+            ),
+
+          // Nickname label above incoming bubble
+          if (!isMe && otherNick?.isNotEmpty == true)
+            Padding(
+              padding: const EdgeInsets.only(left: 14, bottom: 2, top: 2),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(
+                  otherNick!,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (otherUser?.displayName?.isNotEmpty == true) ...[
+                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F2F5),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      otherUser!.displayName,
+                      style: const TextStyle(
+                          color: Color(0xFF888888), fontSize: 10),
+                    ),
+                  ),
+                ],
+              ]),
             ),
 
           GestureDetector(
@@ -1372,7 +1428,7 @@ class _ChatInfoSheetState extends State<_ChatInfoSheet> {
 
           // Nickname option
           ListTile(
-            leading: Icon(Icons.edit_outlined, color: tc, size: 22),
+            leading: Icon(Icons.edit_rounded, color: tc, size: 22),
             title: Text('Set Nickname', style: TextStyle(color: tc)),
             subtitle: Text('Change display name in this chat',
                 style: TextStyle(color: ts, fontSize: 12)),
@@ -1416,7 +1472,7 @@ class _ChatInfoSheetState extends State<_ChatInfoSheet> {
           // Block
           ListTile(
             leading:
-                const Icon(Icons.block, color: Colors.redAccent, size: 22),
+                const Icon(Icons.block_rounded, color: Colors.redAccent, size: 22),
             title: const Text('Block',
                 style: TextStyle(color: Colors.redAccent)),
             subtitle: Text('Block this person from messaging you',

@@ -87,7 +87,7 @@ class _SearchScreenState extends State<SearchScreen> {
               decoration: InputDecoration(
                 hintText: 'Search by username',
                 hintStyle: TextStyle(color: AppColors.textSecondary(dark)),
-                prefixIcon: Icon(Icons.search, color: AppColors.textSecondary(dark)),
+                prefixIcon: Icon(Icons.search_rounded, color: AppColors.textSecondary(dark)),
                 border: InputBorder.none,
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -102,7 +102,7 @@ class _SearchScreenState extends State<SearchScreen> {
               : !_hasSearched
                   ? Center(
                       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Icon(Icons.person_search,
+                        Icon(Icons.person_rounded_search,
                             size: 64,
                             color: AppColors.textSecondary(dark).withOpacity(0.4)),
                         const SizedBox(height: 12),
@@ -130,7 +130,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                         color: AppColors.textPrimary(dark))),
                                 if (user.isVerified) ...[
                                   const SizedBox(width: 3),
-                                  const Icon(Icons.verified,
+                                  const Icon(Icons.verified_rounded,
                                       color: AppColors.verified, size: 14),
                                 ],
                               ]),

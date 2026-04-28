@@ -65,7 +65,7 @@ class _VerificationRequestScreenState
           backgroundColor: AppColors.white,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.black, size: 22),
+            icon: const Icon(Icons.close_rounded, color: AppColors.black, size: 22),
             onPressed: () => Navigator.pop(context),
           ),
           title: const Text(
@@ -78,7 +78,7 @@ class _VerificationRequestScreenState
           actions: [
             Padding(
               padding: const EdgeInsets.only(right: 16),
-              child: Icon(Icons.check,
+              child: Icon(Icons.check_rounded,
                   color: AppColors.primary.withOpacity(0.6), size: 22),
             ),
           ],
@@ -94,7 +94,7 @@ class _VerificationRequestScreenState
                 child: CustomPaint(
                   painter: _SealBadgePainter(color: AppColors.primary),
                   child: const Center(
-                    child: Icon(Icons.check, color: Colors.white, size: 36),
+                    child: Icon(Icons.check_rounded, color: Colors.white, size: 36),
                   ),
                 ),
               ),
@@ -124,7 +124,7 @@ class _VerificationRequestScreenState
         backgroundColor: AppColors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios,
+          icon: const Icon(Icons.arrow_back_rounded_ios_new_rounded,
               color: AppColors.black, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
@@ -141,7 +141,7 @@ class _VerificationRequestScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.verified, color: AppColors.primary, size: 48),
+            const Icon(Icons.verified_rounded, color: AppColors.primary, size: 48),
             const SizedBox(height: 16),
             const Text(
               'Get Verified',

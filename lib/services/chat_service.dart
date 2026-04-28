@@ -349,4 +349,36 @@ class ChatService {
       'deletedFor.$userId': FieldValue.serverTimestamp(),
     });
   }
+
+  /// Pin / unpin a chat for a specific user
+  Future<void> pinChat({
+    required String chatId,
+    required String userId,
+    required bool pin,
+  }) async {
+    await _firestore.collection('chats').doc(chatId).update({
+      'pinnedBy.$userId': pin ? FieldValue.serverTimestamp() : FieldValue.delete(),
+    });
+  }
+
+  /// Mark chat as unread for a user (force unread dot)
+  Future<void> markChatUnread({
+    required String chatId,
+    required String userId,
+  }) async {
+    await _firestore.collection('chats').doc(chatId).update({
+      'unreadCount.$userId': 1,
+    });
+  }
+
+  /// Mark chat as read (clear unread)
+  Future<void> markChatRead({
+    required String chatId,
+    required String userId,
+  }) async {
+    await _firestore.collection('chats').doc(chatId).update({
+      'unreadCount.$userId': 0,
+    });
+  }
+
 }
