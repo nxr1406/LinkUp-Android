@@ -174,7 +174,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showMessageOptions(MessageModel msg, bool isMe, ChatModel? chat) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    const dark = false;
     // Capture ChatScreen's context BEFORE showing bottom sheet
     final screenContext = context;
     showModalBottomSheet(
@@ -258,7 +258,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showNicknameDialog(ChatModel? chat) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    const dark = false;
     final otherNick = chat?.nicknames[widget.otherUser?.uid ?? ''] ?? '';
     final myNick = chat?.nicknames[widget.currentUid] ?? '';
     showDialog(
@@ -277,7 +277,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showChatInfoSheet(ChatModel? chat) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    const dark = false;
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.cardBg(dark),
@@ -311,7 +311,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    const dark = false;
 
     return StreamBuilder<ChatModel?>(
       stream: _chatService.chatStream(widget.chatId),

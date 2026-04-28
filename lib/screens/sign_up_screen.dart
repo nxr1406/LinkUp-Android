@@ -68,10 +68,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final dark      = Theme.of(context).brightness == Brightness.dark;
-    final textColor = dark ? AppColors.darkText       : AppColors.black;
-    final subColor  = dark ? AppColors.darkTextMedium : AppColors.textMedium;
-    final bgColor   = dark ? AppColors.darkBackground : AppColors.background;
-    final overlayStyle = dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark;
+    const textColor = AppColors.black;
+    const subColor  = AppColors.textMedium;
+    const bgColor   = AppColors.background;
+    const overlayStyle = SystemUiOverlayStyle.dark;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: overlayStyle,
@@ -136,7 +136,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               onChanged: (v) => setState(() => _agreePolicy = v ?? false),
                               activeColor: AppColors.primary,
                               checkColor: Colors.white,
-                              side: BorderSide(color: dark ? Colors.white30 : Colors.grey.shade400),
+                              side: BorderSide(color: Colors.grey.shade400),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                             ),
                           ),
@@ -201,15 +201,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
     VoidCallback? toggleObscure,
     TextInputType keyboardType = TextInputType.text,
   }) {
-    final fieldBg   = dark ? AppColors.darkCard       : AppColors.white;
-    final textColor = dark ? AppColors.darkText       : AppColors.textDark;
-    final hintColor = dark ? AppColors.darkTextMedium : AppColors.grey;
+    const fieldBg   = AppColors.white;
+    const textColor = AppColors.textDark;
+    const hintColor = AppColors.grey;
     return Container(
       decoration: BoxDecoration(
         color: fieldBg,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [BoxShadow(
-            color: Colors.black.withOpacity(dark ? 0.3 : 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10, offset: const Offset(0, 3))],
       ),
       child: TextField(
@@ -242,7 +242,7 @@ class _PinkBlob extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Opacity(
-      opacity: dark ? opacity * 0.18 : opacity,
+      opacity: opacity,
       child: Container(
         width: size, height: size,
         decoration: BoxDecoration(

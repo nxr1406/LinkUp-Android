@@ -208,7 +208,7 @@ class _AppLockScreenState extends State<AppLockScreen>
   // ─────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    const dark = false;
     final bg = dark ? const Color(0xFF0F0F14) : const Color(0xFFF0F1FF);
     final surface = dark ? const Color(0xFF1A1A2E) : Colors.white;
 

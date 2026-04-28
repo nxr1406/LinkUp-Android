@@ -41,7 +41,7 @@ class _NotificationSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    const dark = false;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg(dark),

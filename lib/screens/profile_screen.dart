@@ -22,7 +22,7 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    const dark = false;
 
     if (me == null) {
       return Scaffold(
@@ -138,7 +138,7 @@ class ProfileScreen extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.textPrimary(dark),
                       foregroundColor:
-                          dark ? AppColors.darkBackground : Colors.white,
+                          Colors.white,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
                       elevation: 0,
@@ -281,11 +281,11 @@ class _SettingsSheet extends StatefulWidget {
 }
 
 class _SettingsSheetState extends State<_SettingsSheet> {
-  bool _darkMode = LinkUpApp.isDark;
+  bool _darkMode = false;
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    const dark = false;
     final tc = AppColors.textPrimary(dark);
 
     return SafeArea(

@@ -48,7 +48,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    const dark = false;
     final me = FirebaseAuth.instance.currentUser!;
 
     return Scaffold(

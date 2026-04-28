@@ -10,7 +10,7 @@ class BlockedAccountsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    const dark = false;
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(

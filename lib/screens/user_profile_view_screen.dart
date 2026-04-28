@@ -17,7 +17,7 @@ class UserProfileViewScreen extends StatelessWidget {
     final me = FirebaseAuth.instance.currentUser!;
     final chatService = ChatService();
     final userService = UserService();
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    const dark = false;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg(dark),

@@ -6,21 +6,19 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Force status bar to match pink background
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Color(0xFFE91E8C),
+      statusBarColor: Color(0xFF1A73E8),
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFFE91E8C),
+      systemNavigationBarColor: Color(0xFF1A73E8),
     ));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE91E8C),
+      backgroundColor: const Color(0xFF1A73E8),
       body: SizedBox.expand(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // App icon
             Container(
               width: 100,
               height: 100,
@@ -38,7 +36,7 @@ class SplashScreen extends StatelessWidget {
               child: const Center(
                 child: Icon(
                   Icons.chat_bubble_rounded,
-                  color: Color(0xFFE91E8C),
+                  color: Color(0xFF1A73E8),
                   size: 52,
                 ),
               ),
