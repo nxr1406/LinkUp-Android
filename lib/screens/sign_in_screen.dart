@@ -118,7 +118,7 @@ class _SignInScreenState extends State<SignInScreen> {
                             icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress),
                         const SizedBox(height: 14),
                         _buildField(dark: dark, controller: _passwordCtrl, hint: 'Password',
-                            icon: Icons.lock_rounded_rounded, obscure: _obscure,
+                            icon: Icons.lock_rounded, obscure: _obscure,
                             toggleObscure: () => setState(() => _obscure = !_obscure)),
                         const SizedBox(height: 6),
 

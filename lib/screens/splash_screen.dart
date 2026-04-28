@@ -35,7 +35,7 @@ class SplashScreen extends StatelessWidget {
               ),
               child: const Center(
                 child: Icon(
-                  Icons.chat_bubble_rounded_rounded,
+                  Icons.chat_bubble_rounded,
                   color: Color(0xFF1A73E8),
                   size: 52,
                 ),

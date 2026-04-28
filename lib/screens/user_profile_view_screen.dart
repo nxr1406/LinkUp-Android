@@ -29,7 +29,7 @@ class UserProfileViewScreen extends StatelessWidget {
             pinned: true,
             backgroundColor: AppColors.appBarBg(dark),
             leading: IconButton(
-              icon: Icon(Icons.arrow_back_rounded_ios_new_rounded,
+              icon: Icon(Icons.arrow_back_ios_new_rounded,
                   color: AppColors.textPrimary(dark), size: 20),
               onPressed: () => Navigator.pop(context),
             ),
@@ -229,7 +229,7 @@ class UserProfileViewScreen extends StatelessWidget {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.chat_bubble_rounded_outline_rounded, size: 18),
+                        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
                         label: const Text('Message'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -262,7 +262,7 @@ class UserProfileViewScreen extends StatelessWidget {
                                       : () => userService.unfollowUser(
                                           followerId: me.uid,
                                           followingId: user.uid),
-                                  icon: Icon(Icons.person_rounded_remove_outlined,
+                                  icon: Icon(Icons.person_remove_outlined,
                                       size: 18,
                                       color: AppColors.textPrimary(dark)),
                                   label: Text('Following',
@@ -283,7 +283,7 @@ class UserProfileViewScreen extends StatelessWidget {
                                       : () => userService.followUser(
                                           followerId: me.uid,
                                           followingId: user.uid),
-                                  icon: const Icon(Icons.person_rounded_add_outlined,
+                                  icon: const Icon(Icons.person_add_outlined,
                                       size: 18),
                                   label: const Text('Follow',
                                       style: TextStyle(

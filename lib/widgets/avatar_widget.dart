@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
-import '../utils/app_colors.dart';
 
 class AvatarWidget extends StatelessWidget {
   final UserModel? user;

@@ -102,7 +102,7 @@ class _SearchScreenState extends State<SearchScreen> {
               : !_hasSearched
                   ? Center(
                       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Icon(Icons.person_rounded_search,
+                        Icon(Icons.person_search,
                             size: 64,
                             color: AppColors.textSecondary(dark).withOpacity(0.4)),
                         const SizedBox(height: 12),

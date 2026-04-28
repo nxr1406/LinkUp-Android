@@ -6,7 +6,6 @@ import '../models/user_model.dart';
 import '../services/user_service.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
-import '../main.dart';
 import '../widgets/avatar_widget.dart';
 import 'admin_screen.dart';
 import 'verification_request_screen.dart';
@@ -39,7 +38,7 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
         titleSpacing: 16,
         title: Row(children: [
-          Icon(Icons.lock_rounded_rounded,
+          Icon(Icons.lock_rounded,
               color: AppColors.textPrimary(dark), size: 18),
           const SizedBox(width: 6),
           Text(me!.username,
@@ -69,7 +68,7 @@ class ProfileScreen extends StatelessWidget {
         ]),
         actions: [
           IconButton(
-            icon: Icon(Icons.more_horiz_rounded_rounded,
+            icon: Icon(Icons.more_horiz_rounded,
                 color: AppColors.textPrimary(dark), size: 26),
             onPressed: () => _showSettings(context, dark),
           ),
@@ -333,7 +332,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           _T(icon: Icons.key_rounded, label: 'Change Password',
               dark: dark, onTap: () => _changePassword(context, dark)),
 
-          _T(icon: Icons.verified_rounded_rounded, label: 'Request Verification',
+          _T(icon: Icons.verified_rounded, label: 'Request Verification',
               dark: dark, onTap: () {
             Navigator.pop(context);
             Navigator.push(context, MaterialPageRoute(

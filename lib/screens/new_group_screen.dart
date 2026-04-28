@@ -138,7 +138,7 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded_ios_new_rounded, color: Color(0xFF111111), size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF111111), size: 20),
           onPressed: () {
             if (_namingStep) {
               setState(() => _namingStep = false);

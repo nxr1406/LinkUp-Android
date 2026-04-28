@@ -19,7 +19,7 @@ class BlockedAccountsScreen extends StatelessWidget {
         backgroundColor: AppColors.appBarBg(dark),
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded_ios_new_rounded,
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
               color: AppColors.textPrimary(dark), size: 20),
           onPressed: () => Navigator.pop(context),
         ),

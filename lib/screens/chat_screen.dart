@@ -337,7 +337,7 @@ class _ChatScreenState extends State<ChatScreen> {
         return Scaffold(
           appBar: AppBar(
             leading: IconButton(
-              icon: Icon(Icons.arrow_back_rounded_ios_new_rounded,
+              icon: Icon(Icons.arrow_back_ios_new_rounded,
                   color: AppColors.textPrimary(dark), size: 20),
               onPressed: () => Navigator.pop(context),
             ),
@@ -386,7 +386,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                           if (widget.groupName == null && widget.otherUser?.isVerified == true) ...[
                             const SizedBox(width: 3),
-                            const Icon(Icons.verified_rounded_rounded,
+                            const Icon(Icons.verified_rounded,
                                 color: AppColors.verified, size: 14),
                           ],
                         ]),
@@ -770,7 +770,7 @@ class _MessageOptionsSheet extends StatelessWidget {
           onTap: onReply,
         ),
         ListTile(
-          leading: const Icon(Icons.reply_rounded_rounded),
+          leading: const Icon(Icons.reply_rounded),
           title: const Text('Forward'),
           onTap: onForward,
         ),
@@ -1054,7 +1054,7 @@ class _MessageBubble extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.reply_rounded_rounded,
+                  Icon(Icons.reply_rounded,
                       size: 12, color: AppColors.textSecondary(dark)),
                   const SizedBox(width: 2),
                   Text('Forwarded',

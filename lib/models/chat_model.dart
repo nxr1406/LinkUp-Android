@@ -77,7 +77,7 @@ class ChatModel {
         if (raw is! Map) return <String, DateTime?>{};
         final result = <String, DateTime?>{};
         (raw as Map<dynamic, dynamic>).forEach((k, v) {
-          result[k.toString()] = v != null ? (v as dynamic).toDate() as DateTime : null;
+          result[k.toString()] = v != null ? (v as dynamic).toDate() : null;
         });
         return result;
       }(),
@@ -86,7 +86,7 @@ class ChatModel {
         if (raw is! Map) return <String, DateTime?>{};
         final result = <String, DateTime?>{};
         (raw as Map<dynamic, dynamic>).forEach((k, v) {
-          result[k.toString()] = v != null ? (v as dynamic).toDate() as DateTime : null;
+          result[k.toString()] = v != null ? (v as dynamic).toDate() : null;
         });
         return result;
       }(),

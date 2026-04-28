@@ -89,26 +89,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               items: const [
                 BottomNavigationBarItem(
                   icon: _NavIcon(
-                    icon: Icons.chat_bubble_rounded_outline_rounded_rounded,
+                    icon: Icons.chat_bubble_outline_rounded,
                     active: false,
                   ),
                   activeIcon: _NavIcon(
-                    icon: Icons.chat_bubble_rounded_rounded,
+                    icon: Icons.chat_bubble_rounded,
                     active: true,
                   ),
                   label: 'Chats',
                 ),
                 BottomNavigationBarItem(
-                  icon: _NavIcon(icon: Icons.search_rounded_rounded, active: false),
+                  icon: _NavIcon(icon: Icons.search_rounded, active: false),
                   activeIcon:
-                      _NavIcon(icon: Icons.search_rounded_rounded, active: true),
+                      _NavIcon(icon: Icons.search_rounded, active: true),
                   label: 'Search',
                 ),
                 BottomNavigationBarItem(
                   icon: _NavIcon(
-                      icon: Icons.person_rounded_outline_rounded_rounded, active: false),
+                      icon: Icons.person_outline_rounded, active: false),
                   activeIcon:
-                      _NavIcon(icon: Icons.person_rounded_rounded, active: true),
+                      _NavIcon(icon: Icons.person_rounded, active: true),
                   label: 'Profile',
                 ),
               ],
@@ -306,8 +306,8 @@ class _ChatsTabState extends State<_ChatsTab> {
             // Pin / Unpin
             _ContextTile(
               icon: isPinned
-                  ? Icons.push_pin_rounded_outlined
-                  : Icons.push_pin_rounded_rounded,
+                  ? Icons.push_pin_outlined
+                  : Icons.push_pin_rounded,
               label: isPinned ? 'Unpin chat' : 'Pin chat',
               iconColor: const Color(0xFF1A73E8),
               onTap: () {
@@ -338,7 +338,7 @@ class _ChatsTabState extends State<_ChatsTab> {
 
             // Favorite
             _ContextTile(
-              icon: isFav ? Icons.star_rounded_rounded : Icons.star_rounded_outline_rounded,
+              icon: isFav ? Icons.star_rounded : Icons.star_outline_rounded,
               label: isFav ? 'Remove from favorites' : 'Add to favorites',
               iconColor: const Color(0xFFF59E0B),
               onTap: () {
@@ -349,7 +349,7 @@ class _ChatsTabState extends State<_ChatsTab> {
 
             // Delete
             _ContextTile(
-              icon: Icons.delete_outline_rounded_rounded,
+              icon: Icons.delete_outline_rounded,
               label: 'Delete chat',
               iconColor: Colors.red,
               onTap: () async {
@@ -398,13 +398,15 @@ class _ChatsTabState extends State<_ChatsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
         if (_isSelecting) {
           _clearSelection();
-          return false;
+        } else {
+          Navigator.of(context).pop();
         }
-        return true;
       },
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -414,7 +416,7 @@ class _ChatsTabState extends State<_ChatsTab> {
                 elevation: 0,
                 surfaceTintColor: Colors.transparent,
                 leading: IconButton(
-                  icon: const Icon(Icons.close_rounded_rounded,
+                  icon: const Icon(Icons.close_rounded,
                       color: Color(0xFF111111)),
                   onPressed: _clearSelection,
                 ),
@@ -424,7 +426,7 @@ class _ChatsTabState extends State<_ChatsTab> {
                         fontWeight: FontWeight.bold)),
                 actions: [
                   IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded_rounded,
+                    icon: const Icon(Icons.delete_outline_rounded,
                         color: Colors.red),
                     onPressed: _deleteSelected,
                   ),
@@ -446,7 +448,7 @@ class _ChatsTabState extends State<_ChatsTab> {
                   ),
                   if (widget.me?.isVerified == true) ...[
                     const SizedBox(width: 5),
-                    const Icon(Icons.verified_rounded_rounded,
+                    const Icon(Icons.verified_rounded,
                         color: AppColors.verified, size: 18),
                   ],
                 ]),
@@ -480,7 +482,7 @@ class _ChatsTabState extends State<_ChatsTab> {
                       const PopupMenuItem(
                         value: 'new_chat',
                         child: Row(children: [
-                          Icon(Icons.chat_bubble_rounded_outline_rounded_rounded,
+                          Icon(Icons.chat_bubble_outline_rounded,
                               size: 18, color: Color(0xFF111111)),
                           SizedBox(width: 12),
                           Text('New chat',
@@ -491,7 +493,7 @@ class _ChatsTabState extends State<_ChatsTab> {
                       const PopupMenuItem(
                         value: 'new_group',
                         child: Row(children: [
-                          Icon(Icons.group_rounded_add_rounded,
+                          Icon(Icons.group_add_rounded,
                               size: 18, color: Color(0xFF111111)),
                           SizedBox(width: 12),
                           Text('New group',
@@ -531,7 +533,7 @@ class _ChatsTabState extends State<_ChatsTab> {
                     ),
                     child: const Row(children: [
                       SizedBox(width: 12),
-                      Icon(Icons.search_rounded_rounded,
+                      Icon(Icons.search_rounded,
                           color: Color(0xFF888888), size: 20),
                       SizedBox(width: 8),
                       Text('Search...',
@@ -626,10 +628,10 @@ class _ChatsTabState extends State<_ChatsTab> {
             _filter == ChatFilter.unread
                 ? Icons.mark_chat_read_rounded
                 : _filter == ChatFilter.favorites
-                    ? Icons.star_rounded_border_rounded_rounded
+                    ? Icons.star_border_rounded
                     : _filter == ChatFilter.groups
-                        ? Icons.group_rounded_outlined
-                        : Icons.chat_bubble_rounded_outline_rounded_rounded,
+                        ? Icons.group_outlined
+                        : Icons.chat_bubble_outline_rounded,
             size: 60,
             color: const Color(0xFF9E9E9E).withOpacity(0.5),
           ),
@@ -845,25 +847,25 @@ class _ChatTile extends StatelessWidget {
             child: CircularProgressIndicator(
                 strokeWidth: 1.5, color: grey));
       case 'sent':
-        return const Icon(Icons.check_rounded_rounded, size: 15, color: grey);
+        return const Icon(Icons.check_rounded, size: 15, color: grey);
       case 'delivered':
         return SizedBox(
             width: 22,
             child: Stack(children: const [
-              Icon(Icons.check_rounded_rounded, size: 15, color: grey),
+              Icon(Icons.check_rounded, size: 15, color: grey),
               Positioned(
                   left: 6,
-                  child: Icon(Icons.check_rounded_rounded, size: 15, color: grey)),
+                  child: Icon(Icons.check_rounded, size: 15, color: grey)),
             ]));
       case 'seen':
         return SizedBox(
             width: 22,
             child: Stack(children: const [
-              Icon(Icons.check_rounded_rounded, size: 15, color: blue),
+              Icon(Icons.check_rounded, size: 15, color: blue),
               Positioned(
                   left: 6,
                   child:
-                      Icon(Icons.check_rounded_rounded, size: 15, color: blue)),
+                      Icon(Icons.check_rounded, size: 15, color: blue)),
             ]));
       default:
         return const SizedBox.shrink();
@@ -900,7 +902,7 @@ class _ChatTile extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: AppColors.primary.withOpacity(0.88),
                   ),
-                  child: const Icon(Icons.check_rounded_rounded,
+                  child: const Icon(Icons.check_rounded,
                       color: Colors.white, size: 22),
                 ),
               ),
@@ -912,7 +914,7 @@ class _ChatTile extends StatelessWidget {
                   decoration: const BoxDecoration(
                       color: Color(0xFFF59E0B),
                       shape: BoxShape.circle),
-                  child: const Icon(Icons.star_rounded_rounded,
+                  child: const Icon(Icons.star_rounded,
                       color: Colors.white, size: 10),
                 ),
               ),
@@ -928,7 +930,7 @@ class _ChatTile extends StatelessWidget {
                 Expanded(
                   child: Row(children: [
                     if (isPinned) ...[
-                      const Icon(Icons.push_pin_rounded_rounded,
+                      const Icon(Icons.push_pin_rounded,
                           size: 13, color: Color(0xFF1A73E8)),
                       const SizedBox(width: 3),
                     ],
@@ -947,7 +949,7 @@ class _ChatTile extends StatelessWidget {
                     ),
                     if (other?.isVerified == true) ...[
                       const SizedBox(width: 3),
-                      const Icon(Icons.verified_rounded_rounded,
+                      const Icon(Icons.verified_rounded,
                           color: AppColors.verified, size: 14),
                     ],
                   ]),

@@ -222,7 +222,7 @@ class _AppLockScreenState extends State<AppLockScreen>
             child: Row(children: [
               if (!widget.isUnlocking)
                 IconButton(
-                  icon: Icon(Icons.arrow_back_rounded_ios_new_rounded_new,
+                  icon: Icon(Icons.arrow_back_ios_new_rounded,
                       color: dark ? Colors.white70 : Colors.black54, size: 20),
                   onPressed: () => Navigator.pop(context, false),
                 ),
@@ -337,7 +337,7 @@ class _PinLogo extends StatelessWidget {
           BoxShadow(color: accent.withOpacity(0.35), blurRadius: 20, spreadRadius: 2),
         ],
       ),
-      child: const Icon(Icons.lock_rounded_rounded, color: Colors.white, size: 30),
+      child: const Icon(Icons.lock_rounded, color: Colors.white, size: 30),
     );
   }
 }
@@ -548,7 +548,7 @@ class _AppLockSettingsTileState extends State<AppLockSettingsTile> {
     return Column(
       children: [
         ListTile(
-          leading: Icon(Icons.lock_rounded_rounded, color: AppColors.primary, size: 22),
+          leading: Icon(Icons.lock_rounded, color: AppColors.primary, size: 22),
           title: Text('App Lock',
               style: TextStyle(color: tc, fontSize: 15, fontWeight: FontWeight.w500)),
           subtitle: Text(

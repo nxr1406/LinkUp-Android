@@ -51,7 +51,7 @@ class _NewChatScreenState extends State<NewChatScreen> {
         backgroundColor: AppColors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded_ios_new_rounded,
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
               color: AppColors.black, size: 20),
           onPressed: () => Navigator.pop(context),
         ),

@@ -68,7 +68,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: AppColors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded_ios_new_rounded,
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
               color: AppColors.black, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
@@ -95,7 +95,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             _buildField(
                 controller: _displayNameCtrl,
                 label: 'Display Name',
-                icon: Icons.person_rounded_outline_rounded),
+                icon: Icons.person_outline_rounded),
             const SizedBox(height: 16),
             _buildField(
                 controller: _usernameCtrl,
