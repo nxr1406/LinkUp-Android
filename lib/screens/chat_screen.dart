@@ -481,8 +481,13 @@ class _ChatScreenState extends State<ChatScreen> {
                               _formatDateHeader(
                                   reversed[index + 1].timestamp);
 
-                      // showSeen: ALL my messages with status='seen' show cyan tick
-                      final showSeen = isMe && msg.status == 'seen';
+                      // showSeen: only the LAST message sent by me that is 'seen'
+                      // Find the first (most recent since list is reversed) seen msg by me
+                      final lastSeenIndex = reversed.indexWhere(
+                          (m) => m.senderId == widget.currentUid && m.status == 'seen');
+                      final showSeen = isMe &&
+                          msg.status == 'seen' &&
+                          index == lastSeenIndex;
 
                       return Column(children: [
                         if (showDate)
@@ -519,6 +524,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                     msg, isMe, chat),
                           ),
                         ),
+                        // Seen label below last seen message
+                        if (showSeen) const _SeenLabel(),
                       ]);
                     },
                   );

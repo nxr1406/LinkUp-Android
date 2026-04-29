@@ -68,7 +68,7 @@ class ProfileScreen extends StatelessWidget {
         ]),
         actions: [
           IconButton(
-            icon: Icon(Icons.more_horiz_rounded,
+            icon: Icon(Icons.tune_rounded,
                 color: AppColors.textPrimary(dark), size: 26),
             onPressed: () => _showSettings(context, dark),
           ),

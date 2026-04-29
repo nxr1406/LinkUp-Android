@@ -290,13 +290,28 @@ class _ChatsTabState extends State<_ChatsTab> {
                 AvatarWidget(user: other, radius: 22),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    other?.username ?? chat.id,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Color(0xFF111111)),
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        chat.nicknames[other?.uid ?? '']?.isNotEmpty == true
+                            ? chat.nicknames[other?.uid ?? '']!
+                            : (other?.username ?? chat.id),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Color(0xFF111111)),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (chat.nicknames[other?.uid ?? '']?.isNotEmpty == true)
+                        Text(
+                          other?.username ?? '',
+                          style: const TextStyle(
+                              fontSize: 12, color: Color(0xFF9E9E9E)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
                   ),
                 ),
               ]),
@@ -665,6 +680,9 @@ class _ChatsTabState extends State<_ChatsTab> {
           builder: (context, userSnap) {
             final other = userSnap.data;
             final unread = chat.unreadCount[uid] ?? 0;
+            // Get nickname for this user from chat data
+            final otherNick = chat.nicknames[otherUid];
+
             return _ChatTile(
               chat: chat,
               other: other,
@@ -674,6 +692,7 @@ class _ChatsTabState extends State<_ChatsTab> {
               isSelecting: _isSelecting,
               isFavorite: isFav,
               isPinned: isPinned,
+              nickname: otherNick?.isNotEmpty == true ? otherNick : null,
               onTap: () {
                 if (_isSelecting) {
                   _toggleSelect(chat.id);
@@ -803,6 +822,7 @@ class _ChatTile extends StatelessWidget {
   final int unreadCount;
   final bool isSelected, isSelecting, isFavorite, isPinned;
   final VoidCallback onTap, onLongPress;
+  final String? nickname; // nickname set for other user
 
   const _ChatTile({
     required this.chat,
@@ -815,6 +835,7 @@ class _ChatTile extends StatelessWidget {
     required this.isPinned,
     required this.onTap,
     required this.onLongPress,
+    this.nickname,
   });
 
   String _formatTime(DateTime? t) {
@@ -935,16 +956,34 @@ class _ChatTile extends StatelessWidget {
                       const SizedBox(width: 3),
                     ],
                     Flexible(
-                      child: Text(
-                        other?.username ?? '...',
-                        style: TextStyle(
-                          fontWeight: unreadCount > 0
-                              ? FontWeight.w700
-                              : FontWeight.w600,
-                          fontSize: 15.5,
-                          color: const Color(0xFF111111),
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            nickname?.isNotEmpty == true
+                                ? nickname!
+                                : (other?.username ?? '...'),
+                            style: TextStyle(
+                              fontWeight: unreadCount > 0
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              fontSize: 15.5,
+                              color: const Color(0xFF111111),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (nickname?.isNotEmpty == true)
+                            Text(
+                              other?.username ?? '',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF9E9E9E),
+                                fontWeight: FontWeight.normal,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
                     ),
                     if (other?.isVerified == true) ...[
