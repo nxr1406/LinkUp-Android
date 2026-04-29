@@ -1308,6 +1308,33 @@ class _MessageStatusIcon extends StatelessWidget {
   }
 }
 
+// ── Seen label shown under last seen message ──────────────────────────────────
+class _SeenLabel extends StatelessWidget {
+  const _SeenLabel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 16, bottom: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: const [
+          Icon(Icons.done_all, size: 11, color: Color(0xFF4FC3F7)),
+          SizedBox(width: 3),
+          Text(
+            'Seen',
+            style: TextStyle(
+              fontSize: 11,
+              color: Color(0xFF4FC3F7),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Chat Info Bottom Sheet ─────────────────────────────────────────────────────
 class _ChatInfoSheet extends StatefulWidget {
   final bool dark;
