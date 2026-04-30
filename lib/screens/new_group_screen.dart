@@ -5,6 +5,7 @@ import '../models/user_model.dart';
 import '../services/user_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/avatar_widget.dart';
+import '../widgets/user_badges.dart';
 import 'chat_screen.dart';
 
 class NewGroupScreen extends StatefulWidget {
@@ -288,11 +289,7 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
                                   fontWeight: FontWeight.w600,
                                   fontSize: 15,
                                   color: Color(0xFF111111))),
-                          if (user.isVerified) ...[
-                            const SizedBox(width: 3),
-                            const Icon(Icons.verified_rounded,
-                                color: AppColors.verified, size: 14),
-                          ],
+                          UserBadges(user: user, size: 14),
                         ]),
                         subtitle: Text(user.displayName,
                             style: const TextStyle(

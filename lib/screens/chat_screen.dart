@@ -8,6 +8,7 @@ import '../models/user_model.dart';
 import '../services/chat_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/avatar_widget.dart';
+import '../widgets/user_badges.dart';
 import 'user_profile_view_screen.dart';
 import 'app_lock_screen.dart';
 
@@ -384,43 +385,15 @@ class _ChatScreenState extends State<ChatScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (widget.groupName == null && widget.otherUser?.isVerified == true) ...[
-                            const SizedBox(width: 3),
-                            const Icon(Icons.verified_rounded,
-                                color: AppColors.verified, size: 14),
-                          ],
+                          UserBadges(user: widget.otherUser, size: 14),
                         ]),
-                        // Show original name as subtitle if nickname is active
+                        // Subtitle: group count / typing / last seen
                         if (widget.groupName != null)
                           Text(
                             '${(widget.groupParticipants?.length ?? 0) + 1} participants',
                             style: const TextStyle(
                                 color: Color(0xFF888888), fontSize: 11),
                           )
-                        else if (otherNick?.isNotEmpty == true)
-                          Row(children: [
-                            Text(
-                              widget.otherUser?.displayName ?? '',
-                              style: const TextStyle(
-                                  color: Color(0xFF888888),
-                                  fontSize: 11),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 4, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text('nickname',
-                                  style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w600)),
-                            ),
-                          ])
                         else if (isOtherTyping)
                           Text('typing...',
                               style: TextStyle(
@@ -428,6 +401,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   fontSize: 11,
                                   fontStyle: FontStyle.italic))
                         else
+                          // Always show Online/Last seen below name (or nickname)
                           _LastSeenText(user: widget.otherUser, dark: dark),
                       ]),
                 ),

@@ -7,6 +7,7 @@ import '../services/user_service.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/avatar_widget.dart';
+import '../widgets/user_badges.dart';
 import 'admin_screen.dart';
 import 'verification_request_screen.dart';
 import 'edit_profile_screen.dart';
@@ -46,25 +47,7 @@ class ProfileScreen extends StatelessWidget {
                   color: AppColors.textPrimary(dark),
                   fontWeight: FontWeight.bold,
                   fontSize: 18)),
-          if (me!.isVerified) ...[
-            const SizedBox(width: 4),
-            const Icon(Icons.verified_rounded, color: AppColors.verified, size: 18),
-          ],
-          if (me!.isAdmin) ...[
-            const SizedBox(width: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.verified.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Text('Admin',
-                  style: TextStyle(
-                      color: AppColors.verified,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold)),
-            ),
-          ],
+          UserBadges(user: me, size: 18),
         ]),
         actions: [
           IconButton(

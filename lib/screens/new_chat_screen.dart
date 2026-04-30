@@ -5,6 +5,7 @@ import '../services/user_service.dart';
 import '../services/chat_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/avatar_widget.dart';
+import '../widgets/user_badges.dart';
 import 'chat_screen.dart';
 
 class NewChatScreen extends StatefulWidget {
@@ -106,11 +107,7 @@ class _NewChatScreenState extends State<NewChatScreen> {
                                 Text(user.username,
                                     style: const TextStyle(
                                         fontWeight: FontWeight.w600)),
-                                if (user.isVerified) ...[
-                                  const SizedBox(width: 3),
-                                  const Icon(Icons.verified_rounded,
-                                      color: AppColors.verified, size: 14),
-                                ],
+                                UserBadges(user: user, size: 14),
                               ],
                             ),
                             subtitle: Text(user.displayName,

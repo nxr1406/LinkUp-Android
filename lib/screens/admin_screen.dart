@@ -5,6 +5,7 @@ import '../models/verification_model.dart';
 import '../services/user_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/avatar_widget.dart';
+import '../widgets/user_badges.dart';
 
 class AdminScreen extends StatefulWidget {
   final int tab;
@@ -314,11 +315,7 @@ class _UsersTab extends StatelessWidget {
                 children: [
                   Text(user.username,
                       style: const TextStyle(fontWeight: FontWeight.w600)),
-                  if (user.isVerified) ...[
-                    const SizedBox(width: 3),
-                    const Icon(Icons.verified_rounded,
-                        color: AppColors.verified, size: 13),
-                  ],
+                  UserBadges(user: user, size: 13),
                   if (user.isSuspended) ...[
                     const SizedBox(width: 4),
                     const Icon(Icons.block_rounded, color: Colors.red, size: 13),

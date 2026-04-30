@@ -6,6 +6,7 @@ import '../services/chat_service.dart';
 import '../services/user_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/avatar_widget.dart';
+import '../widgets/user_badges.dart';
 import 'chat_screen.dart';
 
 class UserProfileViewScreen extends StatelessWidget {
@@ -148,11 +149,7 @@ class UserProfileViewScreen extends StatelessWidget {
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary(dark))),
-                  if (user.isVerified) ...[
-                    const SizedBox(width: 6),
-                    const Icon(Icons.verified_rounded,
-                        color: AppColors.verified, size: 20),
-                  ],
+                  UserBadges(user: user, size: 20),
                 ]),
                 const SizedBox(height: 4),
 

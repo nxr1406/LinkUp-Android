@@ -8,6 +8,7 @@ import '../services/user_service.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/avatar_widget.dart';
+import '../widgets/user_badges.dart';
 import 'chat_screen.dart';
 import 'search_screen.dart';
 import 'profile_screen.dart';
@@ -461,11 +462,7 @@ class _ChatsTabState extends State<_ChatsTab> {
                         fontSize: 22,
                         letterSpacing: 0.2),
                   ),
-                  if (widget.me?.isVerified == true) ...[
-                    const SizedBox(width: 5),
-                    const Icon(Icons.verified_rounded,
-                        color: AppColors.verified, size: 18),
-                  ],
+                  UserBadges(user: widget.me, size: 18),
                 ]),
                 actions: [
                   IconButton(
@@ -986,11 +983,7 @@ class _ChatTile extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (other?.isVerified == true) ...[
-                      const SizedBox(width: 3),
-                      const Icon(Icons.verified_rounded,
-                          color: AppColors.verified, size: 14),
-                    ],
+                    UserBadges(user: other, size: 14),
                   ]),
                 ),
                 const SizedBox(width: 6),
