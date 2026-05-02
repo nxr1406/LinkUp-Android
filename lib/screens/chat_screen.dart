@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -346,26 +347,20 @@ class _ChatScreenState extends State<ChatScreen> {
             titleSpacing: 0,
             title: GestureDetector(
               onTap: () {
-                if (widget.groupName == null && widget.otherUser != null) {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => UserProfileViewScreen(
-                              user: widget.otherUser!)));
+                if (chat?.isGroup == true) {
+                  Navigator.push(context,
+                    MaterialPageRoute(
+                      builder: (_) => GroupSettingsScreen(chatId: widget.chatId)));
+                } else if (widget.otherUser != null) {
+                  Navigator.push(context,
+                    MaterialPageRoute(
+                      builder: (_) => UserProfileViewScreen(user: widget.otherUser!)));
                 }
               },
               child: Row(children: [
                 // Group icon or user avatar
-                widget.groupName != null
-                    ? Container(
-                        width: 36, height: 36,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.group_rounded,
-                            color: AppColors.primary, size: 20),
-                      )
+                chat?.isGroup == true
+                    ? _GroupAvatar(base64: chat?.groupPhotoUrl)
                     : AvatarWidget(user: widget.otherUser, radius: 18),
                 const SizedBox(width: 10),
                 Expanded(
@@ -375,8 +370,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         Row(children: [
                           Flexible(
                             child: Text(
-                              widget.groupName ??
-                                  (otherNick?.isNotEmpty == true
+                              chat?.isGroup == true
+                                  ? (chat?.groupName ?? 'Group')
+                                  : (otherNick?.isNotEmpty == true
                                       ? otherNick!
                                       : (widget.otherUser?.displayName ?? '...')),
                               style: const TextStyle(
@@ -386,12 +382,13 @@ class _ChatScreenState extends State<ChatScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          UserBadges(user: widget.otherUser, size: 14),
+                          if (chat?.isGroup != true)
+                            UserBadges(user: widget.otherUser, size: 14),
                         ]),
                         // Subtitle: group count / typing / last seen
-                        if (widget.groupName != null)
+                        if (chat?.isGroup == true)
                           Text(
-                            '${(widget.groupParticipants?.length ?? 0) + 1} participants',
+                            '${chat?.participants.length ?? 0} participants',
                             style: const TextStyle(
                                 color: Color(0xFF888888), fontSize: 11),
                           )
@@ -409,11 +406,20 @@ class _ChatScreenState extends State<ChatScreen> {
               ]),
             ),
             actions: [
-              IconButton(
-                icon: Icon(Icons.info_outline_rounded,
-                    color: AppColors.textPrimary(dark)),
-                onPressed: () => _showChatInfoSheet(chat),
-              ),
+              if (chat?.isGroup == true)
+                IconButton(
+                  icon: const Icon(Icons.settings_rounded,
+                      color: Color(0xFF111111), size: 22),
+                  onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(
+                      builder: (_) => GroupSettingsScreen(chatId: widget.chatId))),
+                )
+              else
+                IconButton(
+                  icon: Icon(Icons.info_outline_rounded,
+                      color: AppColors.textPrimary(dark)),
+                  onPressed: () => _showChatInfoSheet(chat),
+                ),
             ],
           ),
           body: Column(children: [
@@ -896,6 +902,32 @@ class _NicknameDialogState extends State<_NicknameDialog> {
           child: const Text('Save', style: TextStyle(color: Colors.white)),
         ),
       ],
+    );
+  }
+}
+
+// ── Group Avatar (base64 or fallback icon) ───────────────────────────────────
+class _GroupAvatar extends StatelessWidget {
+  final String? base64;
+  const _GroupAvatar({this.base64});
+
+  @override
+  Widget build(BuildContext context) {
+    if (base64 != null && base64!.isNotEmpty) {
+      try {
+        final bytes = base64Decode(base64!);
+        return ClipOval(
+          child: Image.memory(bytes, width: 36, height: 36, fit: BoxFit.cover),
+        );
+      } catch (_) {}
+    }
+    return Container(
+      width: 36, height: 36,
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.15),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.group_rounded, color: AppColors.primary, size: 20),
     );
   }
 }

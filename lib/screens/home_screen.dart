@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/chat_model.dart';
@@ -690,6 +691,9 @@ class _ChatsTabState extends State<_ChatsTab> {
               isFavorite: isFav,
               isPinned: isPinned,
               nickname: otherNick?.isNotEmpty == true ? otherNick : null,
+              isGroup: chat.isGroup,
+              groupPhotoBase64: chat.groupPhotoUrl,
+              groupName: chat.groupName,
               onTap: () {
                 if (_isSelecting) {
                   _toggleSelect(chat.id);
@@ -819,7 +823,10 @@ class _ChatTile extends StatelessWidget {
   final int unreadCount;
   final bool isSelected, isSelecting, isFavorite, isPinned;
   final VoidCallback onTap, onLongPress;
-  final String? nickname; // nickname set for other user
+  final String? nickname;
+  final bool isGroup;
+  final String? groupPhotoBase64;
+  final String? groupName;
 
   const _ChatTile({
     required this.chat,
@@ -833,6 +840,9 @@ class _ChatTile extends StatelessWidget {
     required this.onTap,
     required this.onLongPress,
     this.nickname,
+    this.isGroup = false,
+    this.groupPhotoBase64,
+    this.groupName,
   });
 
   String _formatTime(DateTime? t) {
@@ -970,7 +980,7 @@ class _ChatTile extends StatelessWidget {
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (nickname?.isNotEmpty == true)
+                          if (!isGroup && nickname?.isNotEmpty == true)
                             Text(
                               other?.username ?? '',
                               style: const TextStyle(
@@ -1046,6 +1056,31 @@ class _ChatTile extends StatelessWidget {
           ),
         ]),
       ),
+    );
+  }
+}
+
+// ── Group tile avatar ─────────────────────────────────────────────────────────
+class _GroupTileAvatar extends StatelessWidget {
+  final String? base64;
+  final double radius;
+  const _GroupTileAvatar({this.base64, required this.radius});
+
+  @override
+  Widget build(BuildContext context) {
+    if (base64 != null && base64!.isNotEmpty) {
+      try {
+        final bytes = base64Decode(base64!);
+        return ClipOval(
+          child: Image.memory(bytes,
+              width: radius * 2, height: radius * 2, fit: BoxFit.cover),
+        );
+      } catch (_) {}
+    }
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: AppColors.primary.withOpacity(0.12),
+      child: Icon(Icons.group_rounded, color: AppColors.primary, size: radius),
     );
   }
 }
