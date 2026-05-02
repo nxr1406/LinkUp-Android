@@ -380,4 +380,109 @@ class ChatService {
     });
   }
 
+
+  // ── Group management ─────────────────────────────────────────────────────
+
+  /// Update group name
+  Future<void> updateGroupName({
+    required String chatId,
+    required String name,
+  }) async {
+    await _firestore.collection('chats').doc(chatId).update({
+      'groupName': name,
+      'lastMessage': 'Group name changed to "$name"',
+      'lastMessageTime': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Update group photo URL
+  Future<void> updateGroupPhoto({
+    required String chatId,
+    required String photoUrl,
+  }) async {
+    await _firestore.collection('chats').doc(chatId).update({
+      'groupPhotoUrl': photoUrl,
+    });
+  }
+
+  /// Delete group entirely (owner only)
+  Future<void> deleteGroup({required String chatId}) async {
+    // Delete all messages sub-collection
+    final msgs = await _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .get();
+    for (final doc in msgs.docs) {
+      await doc.reference.delete();
+    }
+    await _firestore.collection('chats').doc(chatId).delete();
+  }
+
+  /// Add member to group
+  Future<void> addGroupMember({
+    required String chatId,
+    required String uid,
+    required String addedByUid,
+  }) async {
+    await _firestore.collection('chats').doc(chatId).update({
+      'participants': FieldValue.arrayUnion([uid]),
+      'unreadCount.$uid': 0,
+      'memberRoles.$uid': 'member',
+      'lastMessage': 'New member added',
+      'lastMessageTime': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Remove / kick member from group
+  Future<void> removeGroupMember({
+    required String chatId,
+    required String uid,
+  }) async {
+    await _firestore.collection('chats').doc(chatId).update({
+      'participants': FieldValue.arrayRemove([uid]),
+      'memberRoles.$uid': FieldValue.delete(),
+      'mutedMembers.$uid': FieldValue.delete(),
+      'lastMessage': 'A member was removed',
+      'lastMessageTime': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Set member role: 'owner' | 'admin' | 'moderator' | 'member'
+  Future<void> setMemberRole({
+    required String chatId,
+    required String uid,
+    required String role,
+  }) async {
+    final update = <String, dynamic>{'memberRoles.$uid': role};
+    if (role == 'moderator' || role == 'admin') {
+      update['groupAdmins'] = FieldValue.arrayUnion([uid]);
+    } else {
+      update['groupAdmins'] = FieldValue.arrayRemove([uid]);
+    }
+    await _firestore.collection('chats').doc(chatId).update(update);
+  }
+
+  /// Mute / unmute a member (moderator/admin only)
+  Future<void> setMemberMuted({
+    required String chatId,
+    required String uid,
+    required bool muted,
+  }) async {
+    await _firestore.collection('chats').doc(chatId).update({
+      'mutedMembers.$uid': muted,
+    });
+  }
+
+  /// Set nickname for a user inside this chat
+  Future<void> setGroupNickname({
+    required String chatId,
+    required String targetUid,
+    required String nickname,
+  }) async {
+    await _firestore.collection('chats').doc(chatId).update({
+      'nicknames.$targetUid': nickname,
+    });
+  }
+
 }

@@ -10,6 +10,7 @@ import '../utils/app_colors.dart';
 import '../widgets/avatar_widget.dart';
 import '../widgets/user_badges.dart';
 import 'user_profile_view_screen.dart';
+import 'group_settings_screen.dart';
 import 'app_lock_screen.dart';
 
 class ChatScreen extends StatefulWidget {

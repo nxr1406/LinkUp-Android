@@ -101,6 +101,12 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
         },
         'deletedFor': {},
         'nicknames': {},
+        'groupAdmins': [_currentUser.uid],
+        'memberRoles': {
+          _currentUser.uid: 'owner',
+          for (final uid in participants.skip(1)) uid: 'member',
+        },
+        'mutedMembers': {},
       });
 
       if (!mounted) return;
@@ -159,7 +165,7 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
           ),
           if (!_namingStep)
             Text(
-              '${_selected.length} of 256 selected',
+              '${_selected.length} of 254 selected',
               style: const TextStyle(
                 color: Color(0xFF888888),
                 fontSize: 12,

@@ -13,6 +13,15 @@ class ChatModel {
   final Map<String, DateTime?> deletedFor; // uid → timestamp when deleted
   final Map<String, DateTime?> pinnedBy;   // uid → timestamp when pinned
 
+  // ── Group fields ───────────────────────────────────────────────
+  final bool isGroup;
+  final String? groupName;
+  final String? groupPhotoUrl;
+  final String? createdBy;           // owner uid
+  final List<String> groupAdmins;    // admin/moderator uids
+  final Map<String, String> memberRoles; // uid → 'owner'|'admin'|'moderator'|'member'
+  final Map<String, bool> mutedMembers;  // uid → isMuted
+
   ChatModel({
     required this.id,
     required this.participants,
@@ -27,6 +36,13 @@ class ChatModel {
     this.settings = const {},
     this.deletedFor = const {},
     this.pinnedBy = const {},
+    this.isGroup = false,
+    this.groupName,
+    this.groupPhotoUrl,
+    this.createdBy,
+    this.groupAdmins = const [],
+    this.memberRoles = const {},
+    this.mutedMembers = const {},
   });
 
   factory ChatModel.fromMap(Map<String, dynamic> map, String id) {
@@ -90,6 +106,13 @@ class ChatModel {
         });
         return result;
       }(),
+      isGroup: map['isGroup'] == true,
+      groupName: map['groupName'],
+      groupPhotoUrl: map['groupPhotoUrl'],
+      createdBy: map['createdBy'],
+      groupAdmins: List<String>.from(map['groupAdmins'] ?? []),
+      memberRoles: Map<String, String>.from(map['memberRoles'] ?? {}),
+      mutedMembers: Map<String, bool>.from(map['mutedMembers'] ?? {}),
     );
   }
 
