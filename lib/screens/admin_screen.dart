@@ -6,6 +6,7 @@ import '../services/user_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/avatar_widget.dart';
 import '../widgets/user_badges.dart';
+import '../widgets/user_badges.dart';
 
 class AdminScreen extends StatefulWidget {
   final int tab;

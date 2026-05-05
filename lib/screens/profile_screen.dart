@@ -68,10 +68,7 @@ class ProfileScreen extends StatelessWidget {
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary(dark))),
-            if (me!.isVerified) ...[
-              const SizedBox(width: 4),
-              const Icon(Icons.verified_rounded, color: AppColors.verified, size: 20),
-            ],
+            UserBadges(user: me, size: 20),
           ]),
           const SizedBox(height: 4),
           Text('@${me!.username}',

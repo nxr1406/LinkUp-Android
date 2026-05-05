@@ -106,7 +106,8 @@ class ChatModel {
         });
         return result;
       }(),
-      isGroup: map['isGroup'] == true,
+      // isGroup: true if explicitly set, OR if groupName exists (legacy groups)
+      isGroup: map['isGroup'] == true || (map['groupName'] != null && (map['groupName'] as String).isNotEmpty),
       groupName: map['groupName'],
       groupPhotoUrl: map['groupPhotoUrl'],
       createdBy: map['createdBy'],

@@ -239,7 +239,7 @@ class _ChatsTabState extends State<_ChatsTab> {
             chats.where((c) => _favoriteChatIds.contains(c.id)).toList();
         break;
       case ChatFilter.groups:
-        filtered = chats.where((c) => c.participants.length > 2).toList();
+        filtered = chats.where((c) => c.isGroup).toList();
         break;
     }
 
@@ -416,13 +416,11 @@ class _ChatsTabState extends State<_ChatsTab> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
+      canPop: !_isSelecting,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
         if (_isSelecting) {
           _clearSelection();
-        } else {
-          Navigator.of(context).pop();
         }
       },
       child: Scaffold(
